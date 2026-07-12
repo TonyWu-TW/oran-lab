@@ -1,0 +1,68 @@
+/*
+ * amf3_gpp_access_registration_modification.h
+ *
+ * This datatype contains the set of attributes obtained from type  Amf3GppAccessRegistration by deleting attributes that are not subject to modification by HTTP PATCH method. 
+ */
+
+#ifndef _OpenAPI_amf3_gpp_access_registration_modification_H_
+#define _OpenAPI_amf3_gpp_access_registration_modification_H_
+
+#include <string.h>
+#include "../external/cJSON.h"
+#include "../include/list.h"
+#include "../include/keyValuePair.h"
+#include "../include/binary.h"
+typedef struct OpenAPI_amf3_gpp_access_registration_modification_s OpenAPI_amf3_gpp_access_registration_modification_t;
+#include "backup_amf_info.h"
+#include "eps_interworking_info.h"
+#include "guami.h"
+#include "ims_vo_ps.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct OpenAPI_amf3_gpp_access_registration_modification_s {
+    struct OpenAPI_guami_s *guami;
+    bool is_purge_flag;
+    int purge_flag;
+    char *pei;
+    OpenAPI_ims_vo_ps_e ims_vo_ps;
+    OpenAPI_list_t *backup_amf_info;
+    struct OpenAPI_eps_interworking_info_s *eps_interworking_info;
+    bool is_ue_srvcc_capability_null;
+    bool is_ue_srvcc_capability;
+    int ue_srvcc_capability;
+    bool is_ue_mint_capability;
+    int ue_mint_capability;
+    bool is_ue_mint_eps_capability;
+    int ue_mint_eps_capability;
+};
+
+OpenAPI_amf3_gpp_access_registration_modification_t *OpenAPI_amf3_gpp_access_registration_modification_create(
+    OpenAPI_guami_t *guami,
+    bool is_purge_flag,
+    int purge_flag,
+    char *pei,
+    OpenAPI_ims_vo_ps_e ims_vo_ps,
+    OpenAPI_list_t *backup_amf_info,
+    OpenAPI_eps_interworking_info_t *eps_interworking_info,
+    bool is_ue_srvcc_capability_null,
+    bool is_ue_srvcc_capability,
+    int ue_srvcc_capability,
+    bool is_ue_mint_capability,
+    int ue_mint_capability,
+    bool is_ue_mint_eps_capability,
+    int ue_mint_eps_capability
+);
+void OpenAPI_amf3_gpp_access_registration_modification_free(OpenAPI_amf3_gpp_access_registration_modification_t *amf3_gpp_access_registration_modification);
+OpenAPI_amf3_gpp_access_registration_modification_t *OpenAPI_amf3_gpp_access_registration_modification_parseFromJSON(cJSON *amf3_gpp_access_registration_modificationJSON);
+cJSON *OpenAPI_amf3_gpp_access_registration_modification_convertToJSON(OpenAPI_amf3_gpp_access_registration_modification_t *amf3_gpp_access_registration_modification);
+OpenAPI_amf3_gpp_access_registration_modification_t *OpenAPI_amf3_gpp_access_registration_modification_copy(OpenAPI_amf3_gpp_access_registration_modification_t *dst, OpenAPI_amf3_gpp_access_registration_modification_t *src);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _OpenAPI_amf3_gpp_access_registration_modification_H_ */
+

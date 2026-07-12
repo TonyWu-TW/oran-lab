@@ -1,0 +1,151 @@
+#/*
+# * SPDX-License-Identifier: LicenseRef-CSSL-1.0
+# */
+
+#
+#---------------------------------------------------------------------
+#
+# Dockerfile for the Open-Air-Interface FlexRIC service
+#   Valid for Rocky Linux 9.+
+#
+#---------------------------------------------------------------------
+# BUILDER IMAGE
+#---------------------------------------------------------------------
+FROM docker.io/rockylinux:9 AS oai-flexric-base
+ENV TZ=Europe/Paris
+
+#install developers pkg/repo
+RUN dnf install 'dnf-command(config-manager)' -y && \
+    dnf install epel-release -y && crb enable && \
+    dnf update -y && \
+    # here just to display the current version
+    cat /etc/os-release && \
+    dnf install -y \
+       lksctp-tools-devel \
+       git \
+       bash \
+       wget \
+       tar \
+       m4 \
+       automake \
+       libtool \
+       python3 \
+       make \
+       cmake \
+       cmake-gui \
+       bison \
+       flex \
+       gdb \
+       pcre2-devel \
+       python3-devel \
+       python3-pip \
+       gcc-toolset-12-gcc \
+       gcc-toolset-12-gcc-c++ \
+       ninja-build && \
+    echo "/usr/local/lib" > /etc/ld.so.conf.d/local-lib.conf && \
+    echo "/usr/local/lib64" >> /etc/ld.so.conf.d/local-lib.conf
+
+RUN git clone https://github.com/swig/swig.git && \
+    cd swig && \
+    git checkout release-4.1 && \
+    scl enable gcc-toolset-12 "\
+    ./autogen.sh && \
+    ./configure --prefix=/usr/ && \
+    make -j8 && \
+    make install" && \
+    ldconfig
+
+RUN rm -rf /tmp/asn1c && \
+    git clone https://github.com/mouse07410/asn1c /tmp/asn1c && \
+    cd /tmp/asn1c && \
+    git checkout 940dd5fa9f3917913fd487b13dfddfacd0ded06e && \
+    # Showing which version is used
+    git log -n1 && \
+    autoreconf -iv && \
+    ./configure --prefix /opt/asn1c/ && \
+    make -j`nproc` && \
+    make install
+
+FROM oai-flexric-base as oai-flexric-builder
+ARG E2AP_VERSION=E2AP_V3
+ARG KPM_VERSION=KPM_V3_00
+
+WORKDIR /flexric
+
+COPY . .
+
+RUN mkdir build && \
+    cd build && \
+    scl enable gcc-toolset-12 "\
+    cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
+          -DE2AP_VERSION=$E2AP_VERSION \
+          -DKPM_VERSION=$KPM_VERSION .. && \
+    ninja && \
+    ninja install" && \
+    echo "--- Check shared objects dependencies for executable nearRT-RIC ---" && \
+    ldd /flexric/build/examples/ric/nearRT-RIC && \
+    echo "--- Check shared objects dependencies for xApp shared library ---" && \
+    ldd /flexric/build/src/xApp/libe42_xapp_shared.so
+
+#---------------------------------------------------------------------
+# TARGET IMAGE
+#---------------------------------------------------------------------
+
+FROM docker.io/rockylinux:9-minimal AS oai-flexric
+ENV TZ=Europe/Paris
+
+#install developers pkg/repo
+RUN microdnf update -y && \
+    microdnf install -y \
+       tzdata \
+       psmisc \
+       gpg \
+       wget \
+       lksctp-tools \
+       python3 \
+       python3-pip && \
+    microdnf clean all -y && \
+    echo "/usr/local/lib" > /etc/ld.so.conf.d/local-lib.conf && \
+    echo "/usr/local/lib64" >> /etc/ld.so.conf.d/local-lib.conf
+
+WORKDIR /usr/local/lib64/flexric/
+
+COPY --from=oai-flexric-builder \
+    /usr/local/lib64/flexric /usr/local/lib64/flexric
+
+WORKDIR /flexric/build/src/xApp/
+COPY --from=oai-flexric-builder \
+    /flexric/build/src/xApp/libe42_xapp_shared.so \
+    /flexric/build/src/xApp/
+
+COPY --from=oai-flexric-builder \
+    /flexric/build/examples/ric/nearRT-RIC /usr/local/bin/nearRT-RIC
+
+## Copy xApps
+WORKDIR /usr/local/flexric
+COPY --from=oai-flexric-builder \
+    /flexric/build/examples/xApp /usr/local/flexric/xApp
+
+## Copy E2 agent emulators
+COPY --from=oai-flexric-builder \
+    /flexric/build/examples/emulator/agent /usr/local/flexric/emulator/agent
+
+## Copy KPM measurement list defined by 3GPP TS 28.552
+COPY --from=oai-flexric-builder \
+    /flexric/build/28_552_kpm_meas.txt /flexric/build/28_552_kpm_meas.txt
+
+RUN ldconfig && \
+    echo "--- Check shared objects dependencies for executable nearRT-RIC ---" && \
+    ldd /usr/local/bin/nearRT-RIC && \
+    echo "--- Check shared objects dependencies for xApp shared library ---" && \
+    ldd /flexric/build/src/xApp/libe42_xapp_shared.so && \
+    echo "--- Check shared objects dependencies for flexric shared libraries ---" && \
+    ldd /usr/local/lib64/flexric/*.so
+
+WORKDIR /
+## E2
+EXPOSE 36421/sctp
+## E42
+EXPOSE 36422/sctp
+
+CMD ["stdbuf", "-o0", "nearRT-RIC"]

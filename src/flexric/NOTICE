@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: CC-BY-4.0
+
+The source code (for flexRIC and xApps) is distributed under [**Collaborative Standards Software
+License (CSSL) v1.0**](LICENSE).
+Files under src/util/alg_ds, docker-compose yaml files and some ci-scripts 
+are distributed under [MIT license](preferred)(MIT.txt). 
+Documentation is distributed under
+[Creative Commons Attribution 4.0 International license](LICENSES/preferred/CC-BY-4.0.txt).
+
+For more details of the license, refer to the `LICENSES` directory for a list
+of preferred and exceptionally-applied licenses.
+
+However, the source code uses third party dependencies that is
+acknowledged here for reference:
+
+Credits for https://github.com/swig/swig.git
+
+swig (http://www.swig.org): GPL-3.0 and https://github.com/swig/swig/blob/master/LICENSE-UNIVERSITIES
+
+Credits for file generated via ASN1C:
+
+Source: https://github.com/mouse07410/asn1c
+Author: Lev Walkin <vlm@lionet.info>
+
+Credits for src/xApp/db/sqlite3/*
+Sqlite: in public domain, see https://sqlite.org/copyright.html

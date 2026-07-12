@@ -1,0 +1,7 @@
+*.out 
+*.swp
+compile_commands.json
+build/
+tags
+archives/
+test_results*.html

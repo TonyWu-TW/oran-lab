@@ -1,0 +1,41 @@
+// SPDX-FileCopyrightText: Copyright (C) 2021-2026 Software Radio Systems Limited
+// SPDX-License-Identifier: BSD-3-Clause-Open-MPI
+// Portions of this file may implement 3GPP specifications, which may be subject to additional licensing requirements.
+
+#include "resource_grid_impl.h"
+#include "ocudu/ocuduvec/zero.h"
+#include "ocudu/support/ocudu_assert.h"
+
+using namespace ocudu;
+
+resource_grid_impl::resource_grid_impl(unsigned nof_ports_, unsigned nof_symb_, unsigned nof_subc_) :
+  nof_ports(nof_ports_), nof_symb(nof_symb_), nof_subc(nof_subc_), writer(rg_buffer, empty), reader(rg_buffer, empty)
+{
+  // Reserve memory for the internal buffer.
+  rg_buffer.reserve({nof_subc, nof_symb, nof_ports});
+
+  // Set all the resource elements to zero.
+  ocuduvec::zero(rg_buffer.get_data());
+  empty = (1U << nof_ports) - 1;
+}
+
+void resource_grid_impl::set_all_zero()
+{
+  // For each non-empty port, set the underlying resource elements to zero.
+  for (unsigned port = 0; port != nof_ports; ++port) {
+    if (!reader.is_port_empty(port)) {
+      ocuduvec::zero(rg_buffer.get_view<static_cast<unsigned>(resource_grid_dimensions::port)>({port}));
+    }
+  }
+  empty.store((1U << nof_ports) - 1, std::memory_order_release);
+}
+
+resource_grid_writer& resource_grid_impl::get_writer()
+{
+  return writer;
+}
+
+const resource_grid_reader& resource_grid_impl::get_reader() const
+{
+  return reader;
+}

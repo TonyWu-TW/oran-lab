@@ -1,0 +1,100 @@
+// SPDX-FileCopyrightText: Copyright (C) 2021-2026 Software Radio Systems Limited
+// SPDX-License-Identifier: BSD-3-Clause-Open-MPI
+// Portions of this file may implement 3GPP specifications, which may be subject to additional licensing requirements.
+
+#pragma once
+
+#include "ocudu/adt/bit_buffer.h"
+#include "ocudu/adt/mpmc_queue.h"
+#include "ocudu/adt/span.h"
+#include "ocudu/phy/upper/log_likelihood_ratio.h"
+#include "ocudu/support/math/math_utils.h"
+#include "ocudu/support/ocudu_assert.h"
+#include <cstdint>
+#include <vector>
+
+namespace ocudu {
+
+/// Manages a codeblock buffer pool.
+class rx_buffer_codeblock_pool
+{
+private:
+  /// Codeblock identifier list type.
+  using codeblock_identifier_list =
+      concurrent_queue<unsigned, concurrent_queue_policy::lockfree_mpmc, concurrent_queue_wait_policy::non_blocking>;
+
+  /// Describes a codeblock buffer entry.
+  struct entry {
+    /// Contains the codeblock soft bits.
+    std::vector<log_likelihood_ratio> soft_bits;
+    /// Contains the codeblock data bits.
+    dynamic_bit_buffer data_bits;
+  };
+
+  /// Stores all codeblock entries.
+  std::vector<entry> entries;
+  /// List containing the free codeblocks identifiers.
+  codeblock_identifier_list free_list;
+
+public:
+  /// \brief Creates a receive buffer codeblock pool.
+  /// \param[in] nof_codeblocks Indicates the maximum number of codeblocks.
+  /// \param[in] max_codeblock_size Indicates the maximum codeblock size.
+  /// \param[in] external_soft_bits Set to true to indicate that soft bits are not stored in the buffer.
+  rx_buffer_codeblock_pool(unsigned nof_codeblocks, unsigned max_codeblock_size, bool external_soft_bits) :
+    free_list(nof_codeblocks)
+  {
+    entries.resize(nof_codeblocks);
+    unsigned cb_id = 0;
+    for (entry& e : entries) {
+      e.soft_bits.resize(external_soft_bits ? 0 : max_codeblock_size);
+      // The maximum number of data bits is
+      // max_codeblock_size * max(BG coding rate) = max_codeblock_size * (1/3)
+      e.data_bits.resize(divide_ceil(max_codeblock_size, 3));
+      // Push codeblock identifier into the free list.
+      while (!free_list.try_push(cb_id++)) {
+      }
+    }
+  }
+
+  /// \brief Reserves a codeblock buffer.
+  /// \return The codeblock identifier in the pool if it is reserved successfully. Otherwise, \c std::nullopt
+  std::optional<unsigned> reserve()
+  {
+    // Try to get an available codeblock.
+    unsigned obj;
+    if (free_list.try_pop(obj)) {
+      return obj;
+    }
+    return std::nullopt;
+  }
+
+  /// \brief Frees a codeblock buffer.
+  /// \param[in] cb_id Indicates the codeblock identifier in the pool.
+  void free(unsigned cb_id)
+  {
+    // Push codeblock identifier back in the pool.
+    while (!free_list.try_push(cb_id)) {
+    }
+  }
+
+  /// \brief Gets a codeblock soft-bit buffer.
+  /// \param[in] cb_id Indicates the codeblock identifier.
+  /// \return A view to the codeblock soft-bit buffer.
+  span<log_likelihood_ratio> get_soft_bits(unsigned cb_id)
+  {
+    ocudu_assert(cb_id < entries.size(), "Codeblock index ({}) is out of range ({}).", cb_id, entries.size());
+    return entries[cb_id].soft_bits;
+  }
+
+  /// \brief Gets a codeblock data-bit buffer.
+  /// \param[in] cb_id Indicates the codeblock identifier.
+  /// \return A view to the codeblock data-bit buffer.
+  bit_buffer& get_data_bits(unsigned cb_id)
+  {
+    ocudu_assert(cb_id < entries.size(), "Codeblock index ({}) is out of range ({}).", cb_id, entries.size());
+    return entries[cb_id].data_bits;
+  }
+};
+
+} // namespace ocudu

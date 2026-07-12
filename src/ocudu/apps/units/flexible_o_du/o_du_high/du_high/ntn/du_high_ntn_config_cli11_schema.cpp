@@ -1,0 +1,622 @@
+// SPDX-FileCopyrightText: Copyright (C) 2021-2026 Software Radio Systems Limited
+// SPDX-License-Identifier: BSD-3-Clause-Open-MPI
+// Portions of this file may implement 3GPP specifications, which may be subject to additional licensing requirements.
+
+#include "du_high_ntn_config_cli11_schema.h"
+#include "du_high_unit_cell_ntn_config.h"
+#include "ocudu/ran/ntn.h"
+#include "ocudu/support/cli11_utils.h"
+#include "ocudu/support/config_parsers.h"
+#include "ocudu/support/string_parsing_utils.h"
+#include <regex>
+
+using namespace ocudu;
+
+static bool is_number(const std::string& s)
+{
+  return !s.empty() && std::all_of(s.begin(), s.end(), ::isdigit);
+}
+
+static bool is_valid_timestamp(const std::string& input)
+{
+  static const std::regex timestamp_regex(R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?$)",
+                                          std::regex::ECMAScript);
+
+  return std::regex_match(input, timestamp_regex);
+}
+
+/// Parse ISO 8601 with optional milliseconds: "YYYY-MM-DDTHH:MM:SS[.mmm]" and return UTC timepoint.
+static expected<std::chrono::system_clock::time_point, std::string> parse_timestamp_ms(const std::string& datetime)
+{
+  std::tm tm           = {};
+  int     milliseconds = 0;
+
+  size_t      dot_pos = datetime.find('.');
+  std::string base    = datetime;
+
+  if (dot_pos != std::string::npos) {
+    base = datetime.substr(0, dot_pos);
+  }
+
+  std::istringstream ss(base);
+  ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+  if (ss.fail()) {
+    return make_unexpected("Invalid datetime format (expected YYYY-MM-DDTHH:MM:SS[.mmm])");
+  }
+
+  if (dot_pos != std::string::npos) {
+    std::string ms_str = datetime.substr(dot_pos + 1);
+    if (ms_str.length() > 3) {
+      ms_str = ms_str.substr(0, 3);
+    }
+    while (ms_str.length() < 3) {
+      ms_str += '0';
+    }
+    milliseconds = std::stoi(ms_str);
+  }
+
+  time_t seconds = timegm(&tm);
+  auto   tp      = std::chrono::system_clock::from_time_t(seconds);
+  tp += std::chrono::milliseconds(milliseconds);
+  return tp;
+}
+
+static void configure_cli11_feeder_link(CLI::App& app, feeder_link_info_t& feeder_link_info)
+{
+  add_option(app,
+             "--enable_doppler_compensation",
+             feeder_link_info.enable_doppler_compensation,
+             "Enable/disable Feeder Link Doppler compensation.")
+      ->capture_default_str();
+  add_option(app, "--dl_freq", feeder_link_info.dl_freq, "Downlink feeder link carrier frequency (gnb->sat) [Hz]")
+      ->capture_default_str()
+      ->check(CLI::Range(0.0, 100e9));
+  add_option(app, "--ul_freq", feeder_link_info.ul_freq, "Uplink feeder link carrier frequency (sat->gnb) [Hz]")
+      ->capture_default_str()
+      ->check(CLI::Range(0.0, 100e9));
+}
+
+static void
+configure_cli11_geodetic_coordinates(CLI::App& app, geodetic_coordinates_t& location, bool with_altitude = true)
+{
+  add_option(app, "--latitude", location.latitude, "Latitude [degree]")
+      ->capture_default_str()
+      ->check(CLI::Range(-90.0, 90.0));
+  add_option(app, "--longitude", location.longitude, "Longitude [degree]")
+      ->capture_default_str()
+      ->check(CLI::Range(-180.0, 180.0));
+  if (with_altitude) {
+    add_option(app, "--altitude", location.altitude, "Altitude [m]")
+        ->capture_default_str()
+        ->check(CLI::Range(-1000.0, 20000.0));
+  }
+}
+
+static void configure_cli11_sat_switch_with_resync(CLI::App& app, sat_switch_with_resync_t& sat_switch_config)
+{
+  // epoch_timestamp (reference epoch for assistance info provided in config file).
+  app.add_option_function<std::string>(
+         "--epoch_timestamp",
+         [&sat_switch_config](const std::string& value) {
+           if (is_number(value)) {
+             const auto ms_since_epoch = parse_int<int64_t>(value);
+
+             report_fatal_error_if_not(ms_since_epoch.has_value(),
+                                       fmt::format("Invalid --epoch_timestamp value '" + value + "'").c_str());
+
+             sat_switch_config.epoch_timestamp =
+                 std::chrono::system_clock::time_point(std::chrono::milliseconds(*ms_since_epoch));
+           } else {
+             sat_switch_config.epoch_timestamp = parse_timestamp_ms(value).value();
+           }
+         },
+         "Epoch timestamp for NTN assistance info (Unix time in ms or ISO 8601: YYYY-MM-DDTHH:MM:SS[.mmm])")
+      ->check([](const std::string& input) {
+        if (!is_number(input) && !is_valid_timestamp(input)) {
+          return std::string("Invalid timestamp format. Expected Unix time (ms) or YYYY-MM-DDTHH:MM:SS[.mmm]");
+        }
+        return std::string();
+      });
+
+  // ntn_gateway_location.
+  static geodetic_coordinates_t ntn_gateway_location;
+  CLI::App*                     gateway_location_subcmd =
+      add_subcommand(app, "ntn_gateway_location", "Geodetic coordinates of NTN gateway location");
+  configure_cli11_geodetic_coordinates(*gateway_location_subcmd, ntn_gateway_location);
+  gateway_location_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("ntn_gateway_location")->count() != 0) {
+      sat_switch_config.ntn_gateway_location = ntn_gateway_location;
+    }
+  });
+
+  // t_service_start (time when target satellite starts serving).
+  app.add_option_function<std::string>(
+         "--t_service_start",
+         [&sat_switch_config](const std::string& value) {
+           if (is_number(value)) {
+             const auto ms_since_epoch = parse_int<int64_t>(value);
+
+             report_fatal_error_if_not(ms_since_epoch.has_value(),
+                                       fmt::format("Invalid --t_service_start value '" + value + "'").c_str());
+
+             sat_switch_config.t_service_start =
+                 std::chrono::system_clock::time_point(std::chrono::milliseconds(*ms_since_epoch));
+           } else {
+             sat_switch_config.t_service_start = parse_timestamp_ms(value).value();
+           }
+         },
+         "Time when target satellite starts serving (Unix time in ms or ISO 8601: YYYY-MM-DDTHH:MM:SS[.mmm])")
+      ->check([](const std::string& input) {
+        if (!is_number(input) && !is_valid_timestamp(input)) {
+          return std::string("Invalid timestamp format. Expected Unix time (ms) or YYYY-MM-DDTHH:MM:SS[.mmm]");
+        }
+        return std::string();
+      });
+
+  // ssb_time_offset_sf (0-159 subframes).
+  app.add_option_function<unsigned>(
+         "--ssb_time_offset_sf",
+         [&sat_switch_config](unsigned value) {
+           sat_switch_config.ssb_time_offset_sf =
+               sat_switch_with_resync_t::ssb_time_offset_t{static_cast<uint8_t>(value)};
+         },
+         "SSB time offset in subframes (0-159)")
+      ->check(CLI::Range(0, 159));
+
+  // Nested NTN config for sat-switch.
+  static ntn_config sat_switch_ntn_cfg;
+  CLI::App*         ntn_cfg_subcmd = add_subcommand(app, "ntn_cfg", "NTN config for satellite switch");
+  configure_cli11_ntn_config_args(*ntn_cfg_subcmd, sat_switch_ntn_cfg);
+  ntn_cfg_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("ntn_cfg")->count() != 0) {
+      sat_switch_config.ntn_cfg = sat_switch_ntn_cfg;
+    }
+  });
+}
+
+static void configure_cli11_ncells(CLI::App& app, std::vector<neighbor_ntn_cell>& ncells)
+{
+  add_option_cell(
+      app,
+      "--ncells",
+      [&ncells](const std::vector<std::string>& values) {
+        if (values.size() > MAX_NOF_NTN_NEIGHBORS) {
+          report_error(fmt::format("ncells: at most {} neighbor cells are supported", MAX_NOF_NTN_NEIGHBORS).c_str());
+        }
+        ncells.resize(values.size());
+        for (unsigned i = 0, e = values.size(); i != e; ++i) {
+          CLI::App subapp("NTN neighbor cell", "NTN neighbor cell, item #" + std::to_string(i));
+          subapp.config_formatter(create_yaml_config_parser());
+          subapp.allow_config_extras(CLI::config_extras_mode::capture);
+          unsigned   pci_val     = 0;
+          unsigned   carrier_val = 0;
+          ntn_config ntn_cfg;
+          subapp.add_option("--pci", pci_val, "Physical Cell ID")->check(CLI::Range(0, static_cast<int>(MAX_PCI)));
+          subapp.add_option("--carrier_freq", carrier_val, "Carrier frequency (NR-ARFCN)")
+              ->check(CLI::Range(0U, 3279165U));
+          configure_cli11_ntn_config_args(subapp, ntn_cfg);
+          std::istringstream ss(values[i]);
+          subapp.parse_from_stream(ss);
+          if (subapp["--pci"]->count() != 0U) {
+            ncells[i].phys_cell_id = static_cast<pci_t>(pci_val);
+          }
+          if (subapp["--carrier_freq"]->count() != 0U) {
+            ncells[i].carrier_freq = arfcn_t{carrier_val};
+          }
+          ncells[i].ntn_cfg = ntn_cfg;
+        }
+      },
+      "List of NTN neighbor cells (pci and carrier_freq)");
+}
+
+static void configure_cli11_epoch_time(CLI::App& app, epoch_time_t& epoch_time)
+{
+  add_option(app, "--sfn", epoch_time.sfn, "SFN Part")->capture_default_str()->check(CLI::Range(0, 1023));
+  add_option(app, "--subframe_number", epoch_time.subframe_number, "Sub-frame number Part")
+      ->capture_default_str()
+      ->check(CLI::Range(0, 9));
+}
+
+static void configure_cli11_ta_info(CLI::App& app, ta_info_t& ta_info)
+{
+  add_option(app, "--ta_common", ta_info.ta_common, "TA common")
+      ->capture_default_str()
+      ->check(CLI::Range(0.0, 270730.0));
+  add_option(app, "--ta_common_drift", ta_info.ta_common_drift, "Drift rate of the common TA")
+      ->capture_default_str()
+      ->check(CLI::Range(-51.4606, 51.4606));
+  add_option(app, "--ta_common_drift_variant", ta_info.ta_common_drift_variant, "Drift rate variation of the common TA")
+      ->capture_default_str()
+      ->check(CLI::Range(0.0, 0.57898));
+  add_option(app, "--ta_common_offset", ta_info.ta_common_offset, "Constant offset added to TA common")
+      ->capture_default_str()
+      ->check(CLI::Range(0.0, 10000.0));
+}
+
+static void configure_cli11_ephemeris_info_ecef(CLI::App& app, ecef_coordinates_t& ephemeris_info)
+{
+  add_option(app, "--pos_x", ephemeris_info.position_x, "X Position of the satellite [m]")
+      ->capture_default_str()
+      ->check(CLI::Range(-43620761.6, 43620759.3));
+  add_option(app, "--pos_y", ephemeris_info.position_y, "Y Position of the satellite [m]")
+      ->capture_default_str()
+      ->check(CLI::Range(-43620761.6, 43620759.3));
+  add_option(app, "--pos_z", ephemeris_info.position_z, "Z Position of the satellite [m]")
+      ->capture_default_str()
+      ->check(CLI::Range(-43620761.6, 43620759.3));
+  add_option(app, "--vel_x", ephemeris_info.velocity_vx, "X Velocity of the satellite [m/s]")
+      ->capture_default_str()
+      ->check(CLI::Range(-7864.32, 7864.26));
+  add_option(app, "--vel_y", ephemeris_info.velocity_vy, "Y Velocity of the satellite [m/s]")
+      ->capture_default_str()
+      ->check(CLI::Range(-7864.32, 7864.26));
+  add_option(app, "--vel_z", ephemeris_info.velocity_vz, "Z Velocity of the satellite [m/s]")
+      ->capture_default_str()
+      ->check(CLI::Range(-7864.32, 7864.26));
+}
+
+static void configure_cli11_ephemeris_info_orbital(CLI::App& app, orbital_coordinates_t& ephemeris_info)
+{
+  add_option(app, "--semi_major_axis", ephemeris_info.semi_major_axis, "Semi-major axis of the satellite [m]")
+      ->capture_default_str()
+      ->check(CLI::Range(6500000.0, 42998632.07));
+  add_option(app, "--eccentricity", ephemeris_info.eccentricity, "Eccentricity of the satellite [-]")
+      ->capture_default_str()
+      ->check(CLI::Range(0.0, 0.01500510825));
+  add_option(app, "--periapsis", ephemeris_info.periapsis, "Periapsis of the satellite [rad]")
+      ->capture_default_str()
+      ->check(CLI::Range(0.0, 6.28407400155));
+  add_option(app, "--longitude", ephemeris_info.longitude, "Longitude of the satellites angle of ascending node [rad]")
+      ->capture_default_str()
+      ->check(CLI::Range(0.0, 6.28407400155));
+  add_option(app, "--inclination", ephemeris_info.inclination, "Inclination of the satellite [rad]")
+      ->capture_default_str()
+      ->check(CLI::Range(-1.57101850624, 1.57101848283));
+  add_option(app, "--mean_anomaly", ephemeris_info.mean_anomaly, "Mean anomaly of the satellite [rad]")
+      ->capture_default_str()
+      ->check(CLI::Range(0.0, 6.28407400155));
+}
+
+static void configure_cli11_ntn_polarization(CLI::App& app, ntn_polarization_t& polarization)
+{
+  add_option_function<std::string>(
+      app,
+      "--dl",
+      [&polarization](const std::string& value) {
+        if (value == to_string(ntn_polarization_t::polarization_type::lhcp)) {
+          polarization.dl = ntn_polarization_t::polarization_type::lhcp;
+        } else if (value == to_string(ntn_polarization_t::polarization_type::rhcp)) {
+          polarization.dl = ntn_polarization_t::polarization_type::rhcp;
+        } else {
+          polarization.dl = ntn_polarization_t::polarization_type::linear;
+        }
+      },
+      "Polarization information for downlink transmission on service link")
+      ->check(CLI::IsMember({"lhcp", "rhcp", "linear"}, CLI::ignore_case));
+
+  add_option_function<std::string>(
+      app,
+      "--ul",
+      [&polarization](const std::string& value) {
+        if (value == to_string(ntn_polarization_t::polarization_type::lhcp)) {
+          polarization.ul = ntn_polarization_t::polarization_type::lhcp;
+        } else if (value == to_string(ntn_polarization_t::polarization_type::rhcp)) {
+          polarization.ul = ntn_polarization_t::polarization_type::rhcp;
+        } else {
+          polarization.ul = ntn_polarization_t::polarization_type::linear;
+        }
+      },
+      "Polarization information for downlink transmission on service link")
+      ->check(CLI::IsMember({"lhcp", "rhcp", "linear"}, CLI::ignore_case));
+}
+
+void ocudu::configure_cli11_ntn_config_args(CLI::App& app, ntn_config& config)
+{
+  static epoch_time_t epoch_time;
+  CLI::App*           epoch_time_subcmd = add_subcommand(app, "epoch_time", "Epoch time for the NTN assistance info");
+  configure_cli11_epoch_time(*epoch_time_subcmd, epoch_time);
+  epoch_time_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("epoch_time")->count() != 0) {
+      config.epoch_time = epoch_time;
+    }
+  });
+
+  app.add_option_function<unsigned>(
+         "--ntn_ul_sync_validity_dur",
+         [&config](unsigned value) { config.ntn_ul_sync_validity_dur = value; },
+         "An UL sync validity duration")
+      ->check(CLI::IsMember({5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 120, 180, 240, 900}));
+
+  app.add_option_function<unsigned>(
+         "--cell_specific_koffset",
+         [&config](unsigned value) { config.cell_specific_koffset = std::chrono::milliseconds(value); },
+         "Cell-specific k-offset to be used for NTN [ms].")
+      ->check(CLI::Range(1U, 1023U));
+
+  static ta_info_t ta_info;
+  CLI::App*        ta_info_subcmd = add_subcommand(app, "ta_info", "TA Info for the NTN assistance information");
+  configure_cli11_ta_info(*ta_info_subcmd, ta_info);
+  ta_info_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("ta_info")->count() != 0) {
+      config.ta_info = ta_info;
+    }
+  });
+
+  static ntn_polarization_t polarization;
+  CLI::App*                 polarization_subcmd =
+      add_subcommand(app, "polarization", "Polarization information for downlink/uplink transmission");
+  configure_cli11_ntn_polarization(*polarization_subcmd, polarization);
+  polarization_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("polarization")->count() != 0) {
+      config.polarization = polarization;
+    }
+  });
+
+  // Ephemeris configuration: ECEF state vector.
+  static ecef_coordinates_t ecef_coordinates;
+  CLI::App*                 ephem_subcmd_ecef =
+      add_subcommand(app, "ephemeris_info_ecef", "Ephermeris information of the satellite in ecef coordinates");
+  configure_cli11_ephemeris_info_ecef(*ephem_subcmd_ecef, ecef_coordinates);
+  ephem_subcmd_ecef->parse_complete_callback([&]() {
+    if (app.get_subcommand("ephemeris_info_ecef")->count() != 0) {
+      config.ephemeris_info = ecef_coordinates;
+    }
+  });
+
+  // Ephemeris configuration: Orbital parameters.
+  static orbital_coordinates_t orbital_coordinates;
+  CLI::App*                    ephem_subcmd_orbital =
+      add_subcommand(app, "ephemeris_orbital", "Ephermeris information of the satellite in orbital coordinates");
+  configure_cli11_ephemeris_info_orbital(*ephem_subcmd_orbital, orbital_coordinates);
+  ephem_subcmd_orbital->parse_complete_callback([&]() {
+    if (app.get_subcommand("ephemeris_orbital")->count() != 0) {
+      config.ephemeris_info = orbital_coordinates;
+    }
+  });
+
+  app.add_option_function<bool>(
+      "--ta_report",
+      [&config](bool value) { config.ta_report = value; },
+      "When this field is included in SIB19, it indicates reporting of timing advanced is enabled");
+}
+
+static void configure_cli11_ntn_args(CLI::App& app, du_high_unit_cell_ntn_config& config)
+{
+  add_option(
+      app, "--cell_specific_koffset", config.cell_specific_koffset, "Cell-specific k-offset to be used for NTN [ms].")
+      ->capture_default_str()
+      ->check(CLI::Range(1, 1023));
+
+  app.add_option("--ntn_ul_sync_validity_dur", config.ntn_ul_sync_validity_dur, "An UL sync validity duration")
+      ->capture_default_str()
+      ->check(CLI::IsMember({5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 120, 180, 240, 900}));
+
+  add_option_function<std::string>(
+      app,
+      "--propagator_type",
+      [&config](const std::string& value) {
+        config.propagator_type = (value == "keplerian") ? ocudu_ntn::orbit_propagator_type::keplerian
+                                                        : ocudu_ntn::orbit_propagator_type::rk4;
+      },
+      "Orbit propagator for ephemeris propagation. Allowed: rk4, keplerian.")
+      ->default_str("rk4")
+      ->check(CLI::IsMember({"rk4", "keplerian"}));
+
+  // Epoch time.
+  static epoch_time_t epoch_time;
+  CLI::App* epoch_time_subcmd = add_subcommand(app, "epoch_time", "Epoch time for the NTN assistance information");
+  configure_cli11_epoch_time(*epoch_time_subcmd, epoch_time);
+  epoch_time_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("epoch_time")->count() != 0) {
+      config.epoch_time = epoch_time;
+    }
+  });
+
+  // TA-info
+  static ta_info_t ta_info;
+  CLI::App*        ta_info_subcmd = add_subcommand(app, "ta_info", "TA Info for the NTN assistance information");
+  configure_cli11_ta_info(*ta_info_subcmd, ta_info);
+  ta_info_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("ta_info")->count() != 0) {
+      config.ta_info = ta_info;
+    }
+  });
+
+  // Ephemeris configuration: ECEF state vector.
+  static ecef_coordinates_t ecef_coordinates;
+  CLI::App*                 ephem_subcmd_ecef =
+      add_subcommand(app, "ephemeris_info_ecef", "Ephermeris information of the satellite in ecef coordinates");
+  configure_cli11_ephemeris_info_ecef(*ephem_subcmd_ecef, ecef_coordinates);
+  ephem_subcmd_ecef->parse_complete_callback([&]() {
+    if (app.get_subcommand("ephemeris_info_ecef")->count() != 0) {
+      config.ephemeris_info = ecef_coordinates;
+    }
+  });
+
+  // Ephemeris configuration: Orbital parameters.
+  static orbital_coordinates_t orbital_coordinates;
+  CLI::App*                    ephem_subcmd_orbital =
+      add_subcommand(app, "ephemeris_orbital", "Ephermeris information of the satellite in orbital coordinates");
+  configure_cli11_ephemeris_info_orbital(*ephem_subcmd_orbital, orbital_coordinates);
+  ephem_subcmd_orbital->parse_complete_callback([&]() {
+    if (app.get_subcommand("ephemeris_orbital")->count() != 0) {
+      config.ephemeris_info = orbital_coordinates;
+    }
+  });
+
+  // Distance from the serving cell reference location.
+  app.add_option(
+         "--distance_threshold",
+         config.distance_threshold,
+         "Distance from the serving cell reference location and is used in location-based measurement. Unit is meters.")
+      ->capture_default_str()
+      ->check(CLI::Range(0, 3276250));
+
+  // T-Service.
+  app.add_option_function<std::string>(
+         "--t_service",
+         [&config](const std::string& value) {
+           if (is_number(value)) {
+             // Parse Unix timestamp in milliseconds and convert to timepoint.
+             const auto ms_since_epoch = parse_int<int64_t>(value);
+
+             report_fatal_error_if_not(ms_since_epoch.has_value(),
+                                       fmt::format("Invalid --t_service value '" + value + "'").c_str());
+
+             config.t_service = std::chrono::system_clock::time_point(std::chrono::milliseconds(*ms_since_epoch));
+           } else {
+             // Parse as UTC time string.
+             config.t_service = parse_timestamp_ms(value).value();
+           }
+         },
+         "Indicates end of service for the current cell, in ms unit of Unix time or as UTC time string "
+         "(YYYY-MM-DDTHH:MM:SS[.mmm])")
+      ->capture_default_str()
+      ->check([](const std::string& input) {
+        if (!is_number(input)) {
+          if (!is_valid_timestamp(input)) {
+            return std::string("Invalid timestamp format. Expected YYYY-MM-DDTHH:MM:SS[.mmm]");
+          }
+        }
+        return std::string();
+      });
+
+  // TA-report.
+  app.add_option("--ta_report",
+                 config.ta_report,
+                 " When this field is included in SIB19, it indicates reporting of timing advanced is enabled")
+      ->capture_default_str();
+
+  // Broadcast Ephemeris Info type in SIB19.
+  app.add_option(
+         "--use_state_vector",
+         config.use_state_vector,
+         "Whether to broadcast EphemerisInfo as ECEF state vectors (if true) or ECI Orbital parameters (if false)")
+      ->capture_default_str();
+
+  // Epoch timestamp.
+  app.add_option_function<std::string>(
+         "--epoch_timestamp",
+         [&config](const std::string& value) {
+           if (is_number(value)) {
+             // Parse Unix timestamp in milliseconds and convert to timepoint.
+             const auto ms_since_epoch = parse_int<int64_t>(value);
+
+             report_fatal_error_if_not(ms_since_epoch.has_value(),
+                                       fmt::format("Invalid --epoch_timestamp value '" + value + "'").c_str());
+
+             config.epoch_timestamp = std::chrono::system_clock::time_point(std::chrono::milliseconds(*ms_since_epoch));
+           } else {
+             // Parse as UTC time string.
+             config.epoch_timestamp = parse_timestamp_ms(value).value();
+           }
+         },
+         "Epoch timestamp for the NTN assistance information in ms unit of Unix time or as UTC time string "
+         "(YYYY-MM-DDTHH:MM:SS[.mmm])")
+      ->capture_default_str()
+      ->check([](const std::string& input) {
+        if (!is_number(input)) {
+          if (!is_valid_timestamp(input)) {
+            return std::string("Invalid timestamp format. Expected YYYY-MM-DDTHH:MM:SS[.mmm]");
+          }
+        }
+        return std::string();
+      });
+
+  // Epoch time offset in nof SFNs.
+  app.add_option("--epoch_sfn_offset",
+                 config.epoch_sfn_offset,
+                 "Optional offset (in SFN) between the SIB19 tx slot and the epoch time of the NTN assistance info")
+      ->capture_default_str();
+
+  // Feeder link info.
+  static feeder_link_info_t feeder_link_info;
+  CLI::App*                 feeder_link_subcmd =
+      add_subcommand(app, "feeder_link", "Feeder link parameters used to compensate Doppler shifts");
+  configure_cli11_feeder_link(*feeder_link_subcmd, feeder_link_info);
+  feeder_link_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("feeder_link")->count() != 0) {
+      config.feeder_link_info = feeder_link_info;
+    }
+  });
+
+  // NTN-Gateway Location info.
+  static geodetic_coordinates_t ntn_gateway_location;
+  CLI::App*                     gateway_location_subcmd =
+      add_subcommand(app, "gateway_location", "Geoderic coordinates of the NTN Gateway location");
+  configure_cli11_geodetic_coordinates(*gateway_location_subcmd, ntn_gateway_location);
+  gateway_location_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("gateway_location")->count() != 0) {
+      config.ntn_gateway_location = ntn_gateway_location;
+    }
+  });
+
+  // Cell reference location info.
+  static geodetic_coordinates_t cell_reference_location;
+  CLI::App*                     cell_reference_location_subcmd = add_subcommand(
+      app, "reference_location", "Reference location of the serving cell provided as geodetic coordinates");
+  configure_cli11_geodetic_coordinates(*cell_reference_location_subcmd, cell_reference_location, false);
+  cell_reference_location_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("reference_location")->count() != 0) {
+      config.reference_location = cell_reference_location;
+    }
+  });
+
+  // NTN antenna polarization.
+  static ntn_polarization_t ntn_polarization;
+  CLI::App*                 ntn_polarization_subcmd = add_subcommand(
+      app,
+      "polarization",
+      "If present, it indicates polarization information for downlink/uplink transmission on service link.");
+  configure_cli11_ntn_polarization(*ntn_polarization_subcmd, ntn_polarization);
+  ntn_polarization_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("polarization")->count() != 0) {
+      config.polarization = ntn_polarization;
+    }
+  });
+
+  // Moving reference location (SIB19, R18 extension).
+  static geodetic_coordinates_t moving_ref_location;
+  CLI::App*                     moving_ref_subcmd =
+      add_subcommand(app, "moving_ref_location", "Moving reference location for NTN Earth-moving cell");
+  configure_cli11_geodetic_coordinates(*moving_ref_subcmd, moving_ref_location, false);
+  moving_ref_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("moving_ref_location")->count() != 0) {
+      config.moving_ref_location = moving_ref_location;
+    }
+  });
+
+  // NTN neighbor cells (carrier_freq and pci only).
+  configure_cli11_ncells(app, config.ncells);
+
+  // Satellite switch with resynchronization (SIB19, R18 extension).
+  static sat_switch_with_resync_t sat_switch_config;
+  CLI::App*                       sat_switch_subcmd =
+      add_subcommand(app, "sat_switch_with_resync", "Satellite switch with resynchronization parameters");
+  configure_cli11_sat_switch_with_resync(*sat_switch_subcmd, sat_switch_config);
+  sat_switch_subcmd->parse_complete_callback([&]() {
+    if (app.get_subcommand("sat_switch_with_resync")->count() != 0) {
+      config.sat_switch_with_resync = sat_switch_config;
+    }
+  });
+}
+
+void ocudu::configure_cli11_cell_ntn_args(CLI::App& app, std::optional<du_high_unit_cell_ntn_config>& cell_ntn_params)
+{
+  static du_high_unit_cell_ntn_config ntn_cfg;
+  CLI::App*                           ntn_subcmd = add_subcommand(app, "ntn", "NTN configuration")->configurable();
+
+  if (not cell_ntn_params.has_value()) {
+    // Configure NTN options.
+    configure_cli11_ntn_args(*ntn_subcmd, ntn_cfg);
+    auto ntn_verify_callback = [&]() {
+      CLI::App* ntn_sub_cmd = app.get_subcommand("ntn");
+      if (ntn_sub_cmd->count() != 0) {
+        cell_ntn_params = ntn_cfg;
+      }
+    };
+    ntn_subcmd->parse_complete_callback(ntn_verify_callback);
+  } else {
+    configure_cli11_ntn_args(*ntn_subcmd, *cell_ntn_params);
+  }
+}

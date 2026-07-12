@@ -1,0 +1,50 @@
+/*
+ * SPDX-License-Identifier: LicenseRef-CSSL-1.0
+ */
+
+#ifndef SM_RAN_FUNCTION_DEF_MIR_H
+#define SM_RAN_FUNCTION_DEF_MIR_H
+
+#include <stdbool.h>
+
+#include "../sm/mac_sm/ie/mac_data_ie.h"
+#include "../sm/rlc_sm/ie/rlc_data_ie.h"
+#include "../sm/pdcp_sm/ie/pdcp_data_ie.h"
+#include "../sm/kpm_sm/kpm_data_ie_wrapper.h"
+#include "../sm/rc_sm/ie/rc_data_ie.h"
+#include "../sm/gtp_sm/ie/gtp_data_ie.h"
+#include "../sm/slice_sm/ie/slice_data_ie.h"
+#include "../sm/tc_sm/ie/tc_data_ie.h"
+
+typedef enum {
+  KPM_RAN_FUNC_DEF_E,
+  RC_RAN_FUNC_DEF_E,
+  MAC_RAN_FUNC_DEF_E,
+  RLC_RAN_FUNC_DEF_E,
+  PDCP_RAN_FUNC_DEF_E,
+  GTP_RAN_FUNC_DEF_E,
+  SLICE_RAN_FUNC_DEF_E,
+  TC_RAN_FUNC_DEF_E,
+} ran_func_def_e;
+
+typedef struct{ 
+ ran_func_def_e type;
+ union {
+   kpm_ran_function_def_t kpm; 
+   e2sm_rc_func_def_t rc;
+   mac_func_def_t mac;
+   rlc_func_def_t rlc;
+   pdcp_func_def_t pdcp;
+   gtp_func_def_t gtp;
+   slice_func_def_t slice;
+   tc_func_def_t tc;
+ };
+} sm_ran_function_def_t;
+
+void free_sm_ran_function_def(sm_ran_function_def_t* src);
+
+sm_ran_function_def_t cp_sm_ran_function_def(sm_ran_function_def_t const* src);
+
+bool eq_sm_ran_function_def(sm_ran_function_def_t const* m0,sm_ran_function_def_t const* m1);
+
+#endif

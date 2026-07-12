@@ -1,0 +1,260 @@
+diff --git a/test/CMakeLists.txt b/test/CMakeLists.txt
+index f735ffb6..f9843fac 100644
+--- a/test/CMakeLists.txt
++++ b/test/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ add_subdirectory(agent-ric-xapp)
+ add_subdirectory(agent-ric)
+ add_subdirectory(encode_decode)
+diff --git a/test/agent-ric-xapp/CMakeLists.txt b/test/agent-ric-xapp/CMakeLists.txt
+index 8ed19ade..e9c0145e 100644
+--- a/test/agent-ric-xapp/CMakeLists.txt
++++ b/test/agent-ric-xapp/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ if(KPM_VERSION STREQUAL "KPM_V2_01")
+   set(KPM_SRC ../../src/sm/kpm_sm/kpm_sm_v02.01/ie/kpm_data_ie.c)
+ elseif(KPM_VERSION STREQUAL "KPM_V2_03")
+diff --git a/test/agent-ric/CMakeLists.txt b/test/agent-ric/CMakeLists.txt
+index b84367c0..2e8feb29 100644
+--- a/test/agent-ric/CMakeLists.txt
++++ b/test/agent-ric/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ if(KPM_VERSION STREQUAL "KPM_V2_01")
+   set(KPM_SRC ../../src/sm/kpm_sm/kpm_sm_v02.01/ie/kpm_data_ie.c)
+   set(KPM_ASN_DIR  "../../src/sm/kpm_sm/kpm_sm_v02.01/ie/asn")
+diff --git a/test/encode_decode/CMakeLists.txt b/test/encode_decode/CMakeLists.txt
+index df340a46..586377af 100644
+--- a/test/encode_decode/CMakeLists.txt
++++ b/test/encode_decode/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ add_subdirectory(e2ap)
+ add_subdirectory(sm)
+ 
+diff --git a/test/encode_decode/e2ap/CMakeLists.txt b/test/encode_decode/e2ap/CMakeLists.txt
+index 55e03011..4fae8951 100644
+--- a/test/encode_decode/e2ap/CMakeLists.txt
++++ b/test/encode_decode/e2ap/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ if(E2AP_VERSION STREQUAL "E2AP_V1")
+   add_subdirectory(v1_01)  
+ elseif(E2AP_VERSION STREQUAL "E2AP_V2")
+diff --git a/test/encode_decode/e2ap/v1_01/CMakeLists.txt b/test/encode_decode/e2ap/v1_01/CMakeLists.txt
+index 33d8c316..003e6f77 100644
+--- a/test/encode_decode/e2ap/v1_01/CMakeLists.txt
++++ b/test/encode_decode/e2ap/v1_01/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ ####################################
+ # E2AP Encoding and Decoding tests
+ ###################################
+diff --git a/test/encode_decode/e2ap/v2_03/CMakeLists.txt b/test/encode_decode/e2ap/v2_03/CMakeLists.txt
+index 1311bc36..d1a28e11 100644
+--- a/test/encode_decode/e2ap/v2_03/CMakeLists.txt
++++ b/test/encode_decode/e2ap/v2_03/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ ####################################
+ # E2AP Encoding and Decoding tests
+ ###################################
+diff --git a/test/encode_decode/e2ap/v3_01/CMakeLists.txt b/test/encode_decode/e2ap/v3_01/CMakeLists.txt
+index 358a747d..a808d65d 100644
+--- a/test/encode_decode/e2ap/v3_01/CMakeLists.txt
++++ b/test/encode_decode/e2ap/v3_01/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ ####################################
+ # E2AP Encoding and Decoding tests
+ ###################################
+diff --git a/test/encode_decode/sm/CMakeLists.txt b/test/encode_decode/sm/CMakeLists.txt
+index 69225a53..a76d6489 100644
+--- a/test/encode_decode/sm/CMakeLists.txt
++++ b/test/encode_decode/sm/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ add_subdirectory(kpm)
+ add_subdirectory(rc)
+ enable_testing()
+diff --git a/test/encode_decode/sm/kpm/CMakeLists.txt b/test/encode_decode/sm/kpm/CMakeLists.txt
+index 4db541d7..c07f10d5 100644
+--- a/test/encode_decode/sm/kpm/CMakeLists.txt
++++ b/test/encode_decode/sm/kpm/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ if(KPM_VERSION STREQUAL "KPM_V2_01")
+   add_subdirectory(kpm_sm_v02.01)
+ elseif(KPM_VERSION STREQUAL "KPM_V2_03")
+diff --git a/test/encode_decode/sm/kpm/kpm_sm_v02.01/CMakeLists.txt b/test/encode_decode/sm/kpm/kpm_sm_v02.01/CMakeLists.txt
+index 79f41827..2d20fdda 100644
+--- a/test/encode_decode/sm/kpm/kpm_sm_v02.01/CMakeLists.txt
++++ b/test/encode_decode/sm/kpm/kpm_sm_v02.01/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ project (test_enc_dec_kpm_sm)
+ 
+ add_executable(test_enc_dec_kpm_sm 
+diff --git a/test/encode_decode/sm/kpm/kpm_sm_v02.03/CMakeLists.txt b/test/encode_decode/sm/kpm/kpm_sm_v02.03/CMakeLists.txt
+index ae71e495..8bb7f742 100644
+--- a/test/encode_decode/sm/kpm/kpm_sm_v02.03/CMakeLists.txt
++++ b/test/encode_decode/sm/kpm/kpm_sm_v02.03/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ project (test_enc_dec_kpm_sm)
+ 
+ add_executable(test_enc_dec_kpm_sm 
+diff --git a/test/encode_decode/sm/kpm/kpm_sm_v03.00/CMakeLists.txt b/test/encode_decode/sm/kpm/kpm_sm_v03.00/CMakeLists.txt
+index 7893e2d6..fc4cb27e 100644
+--- a/test/encode_decode/sm/kpm/kpm_sm_v03.00/CMakeLists.txt
++++ b/test/encode_decode/sm/kpm/kpm_sm_v03.00/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ project (test_enc_dec_kpm_sm)
+ 
+ add_executable(test_enc_dec_kpm_sm 
+diff --git a/test/encode_decode/sm/rc/CMakeLists.txt b/test/encode_decode/sm/rc/CMakeLists.txt
+index e73729fa..4d896cbf 100644
+--- a/test/encode_decode/sm/rc/CMakeLists.txt
++++ b/test/encode_decode/sm/rc/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ project (test_enc_dec_rc_sm)
+ 
+ add_executable(test_enc_dec_rc_sm 
+diff --git a/test/sm/CMakeLists.txt b/test/sm/CMakeLists.txt
+index 20ece993..19554bd6 100644
+--- a/test/sm/CMakeLists.txt
++++ b/test/sm/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ add_subdirectory(mac_sm)
+ add_subdirectory(rlc_sm)
+ add_subdirectory(pdcp_sm)
+diff --git a/test/sm/gtp_sm/CMakeLists.txt b/test/sm/gtp_sm/CMakeLists.txt
+index ae5c2571..a00894aa 100644
+--- a/test/sm/gtp_sm/CMakeLists.txt
++++ b/test/sm/gtp_sm/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ set(SM_ENCODING_GTP "PLAIN" CACHE STRING "The GTP SM encoding to use")
+ set_property(CACHE SM_ENCODING_GTP PROPERTY STRINGS "PLAIN" "ASN" "FLATBUFFERS")
+ message(STATUS "Selected GTP SM_ENCODING: ${SM_ENCODING_GTP}")
+diff --git a/test/sm/kpm_sm/CMakeLists.txt b/test/sm/kpm_sm/CMakeLists.txt
+index b228de41..7529dfc3 100644
+--- a/test/sm/kpm_sm/CMakeLists.txt
++++ b/test/sm/kpm_sm/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ if(KPM_VERSION STREQUAL "KPM_V2_01")
+   add_subdirectory(kpm_sm_v02.01)
+ elseif(KPM_VERSION STREQUAL "KPM_V2_03")
+diff --git a/test/sm/kpm_sm/kpm_sm_v02.01/CMakeLists.txt b/test/sm/kpm_sm/kpm_sm_v02.01/CMakeLists.txt
+index 727dcd3f..931b8da8 100644
+--- a/test/sm/kpm_sm/kpm_sm_v02.01/CMakeLists.txt
++++ b/test/sm/kpm_sm/kpm_sm_v02.01/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ set(SM_ENCODING_KPM "ASN" CACHE STRING "The KPM SM encoding to use")
+ set_property(CACHE SM_ENCODING_KPM PROPERTY STRINGS "PLAIN" "ASN" "FLATBUFFERS")
+ message(STATUS "Selected KPM SM_ENCODING: ${SM_ENCODING_KPM}")
+diff --git a/test/sm/kpm_sm/kpm_sm_v02.03/CMakeLists.txt b/test/sm/kpm_sm/kpm_sm_v02.03/CMakeLists.txt
+index 757969b0..f50550c3 100644
+--- a/test/sm/kpm_sm/kpm_sm_v02.03/CMakeLists.txt
++++ b/test/sm/kpm_sm/kpm_sm_v02.03/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ set(SM_ENCODING_KPM "ASN" CACHE STRING "The KPM SM encoding to use")
+ set_property(CACHE SM_ENCODING_KPM PROPERTY STRINGS "PLAIN" "ASN" "FLATBUFFERS")
+ message(STATUS "Selected KPM SM_ENCODING: ${SM_ENCODING_KPM}")
+diff --git a/test/sm/kpm_sm/kpm_sm_v03.00/CMakeLists.txt b/test/sm/kpm_sm/kpm_sm_v03.00/CMakeLists.txt
+index 06558bb4..0fd7527d 100644
+--- a/test/sm/kpm_sm/kpm_sm_v03.00/CMakeLists.txt
++++ b/test/sm/kpm_sm/kpm_sm_v03.00/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ set(SM_ENCODING_KPM "ASN" CACHE STRING "The KPM SM encoding to use")
+ set_property(CACHE SM_ENCODING_KPM PROPERTY STRINGS "PLAIN" "ASN" "FLATBUFFERS")
+ message(STATUS "Selected KPM SM_ENCODING: ${SM_ENCODING_KPM}")
+diff --git a/test/sm/mac_sm/CMakeLists.txt b/test/sm/mac_sm/CMakeLists.txt
+index ace8af41..489da1c5 100644
+--- a/test/sm/mac_sm/CMakeLists.txt
++++ b/test/sm/mac_sm/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ set(SM_ENCODING_MAC "PLAIN" CACHE STRING "The MAC SM encoding to use")
+ set_property(CACHE SM_ENCODING_MAC PROPERTY STRINGS "PLAIN" "ASN" "FLATBUFFERS")
+ message(STATUS "Selected MAC SM_ENCODING: ${SM_ENCODING_MAC}")
+diff --git a/test/sm/pdcp_sm/CMakeLists.txt b/test/sm/pdcp_sm/CMakeLists.txt
+index 7e02ff43..bee7d2cb 100644
+--- a/test/sm/pdcp_sm/CMakeLists.txt
++++ b/test/sm/pdcp_sm/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ set(SM_ENCODING_PDCP "PLAIN" CACHE STRING "The PDCP SM encoding to use")
+ set_property(CACHE SM_ENCODING_PDCP PROPERTY STRINGS "PLAIN" "ASN" "FLATBUFFERS")
+ message(STATUS "Selected PDCP SM_ENCODING: ${SM_ENCODING_PDCP}")
+diff --git a/test/sm/rc_sm/CMakeLists.txt b/test/sm/rc_sm/CMakeLists.txt
+index eb0e48d4..fa824803 100644
+--- a/test/sm/rc_sm/CMakeLists.txt
++++ b/test/sm/rc_sm/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ set(SM_ENCODING_RC "ASN" CACHE STRING "The RC SM encoding to use")
+ set_property(CACHE SM_ENCODING_RC PROPERTY STRINGS "PLAIN" "ASN" "FLATBUFFERS")
+ message(STATUS "Selected RC SM_ENCODING: ${SM_ENCODING_RC}")
+diff --git a/test/sm/rlc_sm/CMakeLists.txt b/test/sm/rlc_sm/CMakeLists.txt
+index e0b7728a..ac2142ce 100644
+--- a/test/sm/rlc_sm/CMakeLists.txt
++++ b/test/sm/rlc_sm/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ set(SM_ENCODING_RLC "PLAIN" CACHE STRING "The RLC SM encoding to use")
+ set_property(CACHE SM_ENCODING_RLC PROPERTY STRINGS "PLAIN" "ASN" "FLATBUFFERS")
+ message(STATUS "Selected RLC SM_ENCODING: ${SM_ENCODING_RLC}")
+diff --git a/test/sm/slice_sm/CMakeLists.txt b/test/sm/slice_sm/CMakeLists.txt
+index a773c175..d012e82d 100644
+--- a/test/sm/slice_sm/CMakeLists.txt
++++ b/test/sm/slice_sm/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ set(SM_ENCODING_SLICE "PLAIN" CACHE STRING "The SLICE SM encoding to use")
+ set_property(CACHE SM_ENCODING_SLICE PROPERTY STRINGS "PLAIN" "ASN" "FLATBUFFERS")
+ message(STATUS "Selected SLICE SM_ENCODING: ${SM_ENCODING_SLICE}")
+diff --git a/test/sm/tc_sm/CMakeLists.txt b/test/sm/tc_sm/CMakeLists.txt
+index b6620188..46454589 100644
+--- a/test/sm/tc_sm/CMakeLists.txt
++++ b/test/sm/tc_sm/CMakeLists.txt
+@@ -1,3 +1,5 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
+ set(SM_ENCODING_TC "PLAIN" CACHE STRING "The TC SM encoding to use")
+ set_property(CACHE SM_ENCODING_TC PROPERTY STRINGS "PLAIN" "ASN" "FLATBUFFERS")
+ message(STATUS "Selected TC SM_ENCODING: ${SM_ENCODING_TC}")

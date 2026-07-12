@@ -1,0 +1,108 @@
+// SPDX-FileCopyrightText: Copyright (C) 2021-2026 Software Radio Systems Limited
+// SPDX-License-Identifier: BSD-3-Clause-Open-MPI
+// Portions of this file may implement 3GPP specifications, which may be subject to additional licensing requirements.
+
+#include "cell_activation_routine.h"
+#include "../du_processor/du_processor_repository.h"
+#include "ocudu/f1ap/cu_cp/f1ap_cu_configuration_update.h"
+#include "ocudu/ran/cause/ngap_cause.h"
+#include "ocudu/ran/plmn_identity.h"
+#include "ocudu/support/async/async_timer.h"
+#include "ocudu/support/async/coroutine.h"
+#include "fmt/ranges.h"
+
+using namespace ocudu;
+using namespace ocudu::ocucp;
+using namespace asn1::rrc_nr;
+
+cell_activation_routine::cell_activation_routine(const cu_cp_configuration&        cu_cp_cfg_,
+                                                 const std::vector<plmn_identity>& plmns_,
+                                                 du_processor_repository&          du_db_,
+                                                 ocudulog::basic_logger&           logger_) :
+  cu_cp_cfg(cu_cp_cfg_), plmns(plmns_), du_db(du_db_), logger(logger_)
+{
+}
+
+void cell_activation_routine::operator()(coro_context<async_task<void>>& ctx)
+{
+  CORO_BEGIN(ctx);
+
+  logger.info("\"{}\" started...", name());
+
+  // Activate all cells that serve the PLMNs.
+  du_indexes = du_db.get_du_processor_indexes();
+  for (du_idx_it = du_indexes.begin(); du_idx_it != du_indexes.end(); ++du_idx_it) {
+    du_proc = du_db.find_du_processor(*du_idx_it);
+    if (du_proc == nullptr) {
+      logger.warning("DU processor not found for index {}", *du_idx_it);
+      continue;
+    }
+
+    if (!generate_gnb_cu_configuration_update()) {
+      logger.warning("Failed to generate gNB-CU configuration update for du={}", *du_idx_it);
+      continue;
+    }
+
+    CORO_AWAIT_VALUE(f1ap_cu_cfg_update_response, du_proc->handle_configuration_update(f1ap_cu_cfg_update));
+    if (!f1ap_cu_cfg_update_response.success) {
+      logger.info("Configuration update for du={} failed. Cause: {}",
+                  *du_idx_it,
+                  f1ap_cu_cfg_update_response.cause.has_value()
+                      ? fmt::to_string(f1ap_cu_cfg_update_response.cause.value())
+                      : "timeout");
+      routine_success = false;
+    }
+  }
+
+  if (routine_success) {
+    logger.info("\"{}\" finished successfully", name());
+  } else {
+    logger.info("\"{}\" failed", name());
+  }
+
+  CORO_RETURN();
+}
+
+void cell_activation_routine::get_plmns_to_activate(const du_cell_configuration& cell_cfg)
+{
+  // Check which of the cells of this DU served the new PLMNs.
+  std::set<plmn_identity> new_plmns(plmns.begin(), plmns.end());
+
+  for (const auto& deactivated_plmn : cell_cfg.deactivated_plmns) {
+    // If the PLMN is in the new PLMNs, we need to keep it.
+    if (new_plmns.count(deactivated_plmn)) {
+      plmns_to_activate.insert(deactivated_plmn);
+    }
+  }
+}
+
+bool cell_activation_routine::generate_gnb_cu_configuration_update()
+{
+  const du_configuration_context* du_ctxt = du_proc->get_context();
+  if (du_ctxt == nullptr) {
+    logger.warning("DU context not found for index {}", *du_idx_it);
+    return false;
+  }
+
+  f1ap_cu_cfg_update = {};
+
+  for (const auto& deactivated_cell : du_ctxt->deactivated_cells) {
+    // Check which of the deactivated cells of this DU serve the lost PLMNs.
+    get_plmns_to_activate(deactivated_cell);
+
+    if (plmns_to_activate.empty()) {
+      // No PLMNs are active, so we can skip this cell.
+      continue;
+    }
+
+    // Update the cells configuration with the PLMNs to activate.
+    f1ap_cu_cfg_update.cells_to_be_activated_list.push_back(
+        {deactivated_cell.cgi,
+         deactivated_cell.pci,
+         std::vector<plmn_identity>(plmns_to_activate.begin(), plmns_to_activate.end())});
+  }
+
+  f1ap_cu_cfg_update.gnb_cu_name = cu_cp_cfg.node.ran_node_name;
+
+  return true;
+}

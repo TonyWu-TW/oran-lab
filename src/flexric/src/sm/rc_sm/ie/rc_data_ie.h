@@ -1,0 +1,551 @@
+/*
+ * SPDX-License-Identifier: LicenseRef-CSSL-1.0
+ */
+
+#ifndef RC_DATA_INFORMATION_ELEMENTS_H
+#define RC_DATA_INFORMATION_ELEMENTS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*
+ * 9 Information Elements (IE) , RIC Event Trigger Definition, RIC Action Definition, RIC Indication Header, RIC Indication Message, RIC Call Process ID, RIC Control Header, RIC Control Message, RIC Control Outcome and RAN Function Definition defined by ORAN-WG3.E2SM-v01.00.00 at Section 5
+ */
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+//////////////////////////////////////
+// RIC Event Trigger Definition
+/////////////////////////////////////
+
+#include "ir/e2sm_rc_ev_trg_frmt_1.h"
+#include "ir/e2sm_rc_ev_trg_frmt_2.h"
+#include "ir/e2sm_rc_ev_trg_frmt_3.h"
+#include "ir/e2sm_rc_ev_trg_frmt_4.h"
+#include "ir/e2sm_rc_ev_trg_frmt_5.h"
+
+
+//////////////////////////////////////
+// RIC Action Definition 
+/////////////////////////////////////
+
+#include "ir/e2sm_rc_act_def_frmt_1.h"
+#include "ir/e2sm_rc_act_def_frmt_2.h"
+#include "ir/e2sm_rc_act_def_frmt_3.h"
+#include "ir/e2sm_rc_act_def_frmt_4.h"
+
+
+/////////////////////////////////////
+// RIC Indication Header 
+/////////////////////////////////////
+
+#include "ir/e2sm_rc_ind_hdr_frmt_1.h"
+#include "ir/e2sm_rc_ind_hdr_frmt_2.h"
+#include "ir/e2sm_rc_ind_hdr_frmt_3.h"
+
+
+/////////////////////////////////////
+// RIC Indication Message 
+/////////////////////////////////////
+
+#include "ir/e2sm_rc_ind_msg_frmt_1.h"
+#include "ir/e2sm_rc_ind_msg_frmt_2.h"
+#include "ir/e2sm_rc_ind_msg_frmt_3.h"
+#include "ir/e2sm_rc_ind_msg_frmt_4.h"
+#include "ir/e2sm_rc_ind_msg_frmt_5.h"
+#include "ir/e2sm_rc_ind_msg_frmt_6.h"
+
+
+/////////////////////////////////////
+// RIC Control Header 
+/////////////////////////////////////
+
+#include "ir/e2sm_rc_ctrl_hdr_frmt_1.h"
+#include "ir/e2sm_rc_ctrl_hdr_frmt_2.h"
+
+
+/////////////////////////////////////
+// RIC Control Message 
+/////////////////////////////////////
+
+#include "ir/e2sm_rc_ctrl_msg_frmt_1.h"
+#include "ir/e2sm_rc_ctrl_msg_frmt_2.h"
+
+
+/////////////////////////////////////
+// RIC Control Outcome 
+/////////////////////////////////////
+
+#include "ir/e2sm_rc_ctrl_out_frmt_1.h"
+#include "ir/e2sm_rc_ctrl_out_frmt_2.h"
+#include "ir/e2sm_rc_ctrl_out_frmt_3.h"
+
+/////////////////////////////////////
+// RAN Function Definition 
+/////////////////////////////////////
+
+#include "../../../lib/sm/ie/ran_function_name.h"
+#include "ir/ran_func_def_ev_trig.h"
+#include "ir/ran_func_def_report.h"
+#include "ir/ran_func_def_insert.h"
+#include "ir/ran_func_def_ctrl.h"
+#include "ir/ran_func_def_policy.h"
+
+/////////////////////////////////////
+// RAN Parameter IDs
+/////////////////////////////////////
+
+typedef enum {    // 8.2.1 RAN Parameters for Report Service Style 1
+  E2SM_RC_RS1_UE_EVENT_ID = 1,
+  E2SM_RC_RS1_NI_MESSAGE = 2,
+  E2SM_RC_RS1_RRC_MESSAGE = 3,
+  E2SM_RC_RS1_UE_ID = 4,
+  E2SM_RC_RS1_OLD_AMF_UE_NGAP_ID = 5,
+  E2SM_RC_RS1_CELL_GLOBAL_ID = 6,
+
+  END_E2SM_RC_RS1_RAN_PARAM_ID
+} report_style_1_ran_param_id_e;
+
+typedef enum {    // 8.2.2 RAN Parameters for Report Service Style 2
+  E2SM_RC_RS2_CURRENT_UE_ID = 1,
+  E2SM_RC_RS2_OLD_UE_ID = 2,
+  E2SM_RC_RS2_CURRENT_RRC_STATE = 3,
+  E2SM_RC_RS2_OLD_RRC_STATE = 4,
+  E2SM_RC_RS2_UE_CONTEXT_INFORMATION_CONTAINER = 5,
+  E2SM_RC_RS2_CELL_GLOBAL_ID = 6,
+  E2SM_RC_RS2_UE_INFORMATION = 7,
+
+  END_E2SM_RC_RS2_RAN_PARAM_ID
+} report_style_2_ran_param_id_e;
+
+typedef enum {    // 8.2.3 RAN Parameters for Report Service Style 3
+  E2SM_RC_RS3_CELL_CONTEXT_INFORMATION = 1,
+  E2SM_RC_RS3_CELL_DELETED = 2,
+  E2SM_RC_RS3_NEIGHBOUR_RELATION_TABLE = 3,
+
+  END_E2SM_RC_RS3_RAN_PARAM_ID
+} report_style_3_ran_param_id_e;
+
+typedef enum {    // 8.2.4 RAN Parameters for Report Service Style 4
+  E2SM_RC_RS4_UL_MAC_CE = 100,
+  E2SM_RC_RS4_DL_MAC_CE = 101,
+  E2SM_RC_RS4_DL_BUFFER_OCCUPANCY = 102,
+  E2SM_RC_RS4_CURRENT_RRC_STATE = 201,
+  E2SM_RC_RS4_RRC_STATE_CHANGED_TO = 202,
+  E2SM_RC_RS4_RRC_MESSAGE = 203,
+  E2SM_RC_RS4_OLD_UE_ID = 300,
+  E2SM_RC_RS4_CURRENT_UE_ID = 301,
+  E2SM_RC_RS4_NI_MESSAGE = 302,
+  E2SM_RC_RS4_CELL_GLOBAL_ID = 400,
+
+  END_E2SM_RC_RS4_RAN_PARAM_ID
+} report_style_4_ran_param_id_e;
+
+typedef enum {    // 8.2.5 RAN Parameters for Report Service Style 5
+  E2SM_RC_RS5_UE_CONTEXT_INFORMATION = 1,
+  E2SM_RC_RS5_CELL_CONTEXT_INFORMATION = 2,
+  E2SM_RC_RS5_NEIGHBOUR_RELATION_TABLE = 3,
+
+  END_E2SM_RC_RS5_RAN_PARAM_ID
+} report_style_5_ran_param_id_e;
+
+typedef enum {
+  TARGET_PRIMARY_CELL_ID_8_4_4_1 = 1,
+  CHOICE_TARGET_CELL_8_4_4_1 = 2,
+  NR_CELL_8_4_4_1 = 3,
+  NR_CGI_8_4_4_1 = 4,
+  EUTRA_CELL_8_4_4_1 = 5,
+  EUTRA_CGI_8_4_4_1 = 6,
+  LIST_OF_PDU_SESSIONS_FOR_HANDOVER_8_4_4_1 = 7,
+  PDU_SESSION_ITEM_FOR_HANDOVER_8_4_4_1 = 8,
+  PDU_SESSION_ID_8_4_4_1 = 9,
+  LIST_OF_QOS_FLOWS_IN_THE_PDU_SESSION_8_4_4_1 = 10,
+  QOS_FLOW_ITEM_8_4_4_1 = 11,
+  QOS_FLOW_IDENTIFIER_8_4_4_1 = 12,
+  LIST_OF_DRBS_FOR_HANDOVER_8_4_4_1 = 13,
+  DRB_ITEM_FOR_HANDOVER_8_4_4_1 = 14,
+  DRB_ID_8_4_4_1 = 15,
+  LIST_OF_QOS_FLOWS_IN_THE_DRB_8_4_4_1 = 16,
+  QOS_FLOW_ITEM_DRB_8_4_4_1 = 17, 
+  QOS_FLOW_IDENTIFIER_DRB_8_4_4_1 = 18,
+  LIST_OF_SECONDARY_CELLS_TO_BE_SETUP_8_4_4_1 = 19,
+  SECONDARY_CELL_ITEM_TO_BE_SETUP_8_4_4_1 = 20,
+  SECONDARY_CELL_ID_8_4_4_1 = 21,
+} handover_Control_param_id_e;
+
+//////////////////////////////////////
+// RIC Event Trigger Definition
+/////////////////////////////////////
+
+typedef enum{
+  FORMAT_1_E2SM_RC_EV_TRIGGER_FORMAT ,
+  FORMAT_2_E2SM_RC_EV_TRIGGER_FORMAT ,
+  FORMAT_3_E2SM_RC_EV_TRIGGER_FORMAT ,
+  FORMAT_4_E2SM_RC_EV_TRIGGER_FORMAT ,
+  FORMAT_5_E2SM_RC_EV_TRIGGER_FORMAT ,
+
+  END_E2SM_RC_EV_TRIGGER_FORMAT
+} e2sm_rc_ev_trigger_format_e ;
+
+typedef struct {
+  e2sm_rc_ev_trigger_format_e format;
+  union{
+    e2sm_rc_ev_trg_frmt_1_t frmt_1;     
+    e2sm_rc_ev_trg_frmt_2_t frmt_2;     
+    e2sm_rc_ev_trg_frmt_3_t frmt_3;     
+    e2sm_rc_ev_trg_frmt_4_t frmt_4;     
+    e2sm_rc_ev_trg_frmt_5_t frmt_5;     
+  };
+} e2sm_rc_event_trigger_t;
+
+void free_e2sm_rc_event_trigger(e2sm_rc_event_trigger_t* src); 
+
+e2sm_rc_event_trigger_t cp_e2sm_rc_event_trigger(e2sm_rc_event_trigger_t const* src);
+
+bool eq_e2sm_rc_event_trigger(e2sm_rc_event_trigger_t const* m0, e2sm_rc_event_trigger_t const* m1);
+
+
+//////////////////////////////////////
+// RIC Action Definition 
+/////////////////////////////////////
+
+typedef enum{
+  FORMAT_1_E2SM_RC_ACT_DEF ,
+  FORMAT_2_E2SM_RC_ACT_DEF ,
+  FORMAT_3_E2SM_RC_ACT_DEF ,
+  FORMAT_4_E2SM_RC_ACT_DEF ,
+
+  END_E2SM_RC_ACT_DEF
+
+} e2sm_rc_act_def_format_e; 
+
+typedef struct {
+  //  RIC Style Type
+  //  Mandatory
+  //  9.3.3
+  // Defined in common 6.2.2.2.
+  uint32_t ric_style_type; 
+
+  e2sm_rc_act_def_format_e format;
+  union{
+  //9.2.1.2.1
+  e2sm_rc_act_def_frmt_1_t frmt_1;
+  e2sm_rc_act_def_frmt_2_t frmt_2;
+  e2sm_rc_act_def_frmt_3_t frmt_3;
+  e2sm_rc_act_def_frmt_4_t frmt_4;
+  };
+} e2sm_rc_action_def_t;
+
+void free_e2sm_rc_action_def(e2sm_rc_action_def_t* src); 
+
+e2sm_rc_action_def_t cp_e2sm_rc_action_def(e2sm_rc_action_def_t const* src);
+
+bool eq_e2sm_rc_action_def(e2sm_rc_action_def_t* m0,  e2sm_rc_action_def_t* m1);
+
+
+
+//////////////////////////////////////
+// RIC Indication Header 
+/////////////////////////////////////
+
+typedef enum{
+  FORMAT_1_E2SM_RC_IND_HDR ,
+  FORMAT_2_E2SM_RC_IND_HDR ,
+  FORMAT_3_E2SM_RC_IND_HDR ,
+
+  END_E2SM_RC_IND_HDR
+
+} e2sm_rc_ind_hdr_format_e; 
+
+typedef struct{
+  e2sm_rc_ind_hdr_format_e format;
+  union{
+    e2sm_rc_ind_hdr_frmt_1_t frmt_1; // 9.2.1.3.1
+    e2sm_rc_ind_hdr_frmt_2_t frmt_2; // 9.2.1.3.1
+    e2sm_rc_ind_hdr_frmt_3_t frmt_3; // 9.2.1.3.1
+  };
+} e2sm_rc_ind_hdr_t;
+
+void free_e2sm_rc_ind_hdr(e2sm_rc_ind_hdr_t* src); 
+
+e2sm_rc_ind_hdr_t cp_e2sm_rc_ind_hdr(e2sm_rc_ind_hdr_t const* src);
+
+bool eq_e2sm_rc_ind_hdr(e2sm_rc_ind_hdr_t const* m0, e2sm_rc_ind_hdr_t const* m1);
+
+//////////////////////////////////////
+// RIC Indication Message 
+/////////////////////////////////////
+
+typedef enum{
+  FORMAT_1_E2SM_RC_IND_MSG ,
+  FORMAT_2_E2SM_RC_IND_MSG ,
+  FORMAT_3_E2SM_RC_IND_MSG ,
+  FORMAT_4_E2SM_RC_IND_MSG ,
+  FORMAT_5_E2SM_RC_IND_MSG ,
+  FORMAT_6_E2SM_RC_IND_MSG ,
+
+  END_E2SM_RC_IND_MSG
+
+} e2sm_rc_ind_msg_format_e ;
+
+
+// 9.2.1.4
+typedef struct {
+  e2sm_rc_ind_msg_format_e format; 
+  union{
+    e2sm_rc_ind_msg_frmt_1_t frmt_1; // 9.2.1.4.1
+    e2sm_rc_ind_msg_frmt_2_t frmt_2; // 9.2.1.4.2
+    e2sm_rc_ind_msg_frmt_3_t frmt_3; // 9.2.1.4.3
+    e2sm_rc_ind_msg_frmt_4_t frmt_4; // 9.2.1.4.4
+    e2sm_rc_ind_msg_frmt_5_t frmt_5; // 9.2.1.4.5
+    e2sm_rc_ind_msg_frmt_6_t frmt_6; // 9.2.1.4.6
+  };
+
+} e2sm_rc_ind_msg_t;
+
+void free_e2sm_rc_ind_msg(e2sm_rc_ind_msg_t* src); 
+
+e2sm_rc_ind_msg_t cp_e2sm_rc_ind_msg(e2sm_rc_ind_msg_t const* src);
+
+bool eq_e2sm_rc_ind_msg(e2sm_rc_ind_msg_t const* m0, e2sm_rc_ind_msg_t const* m1);
+
+
+//////////////////////////////////////
+// RIC Call Process ID 
+/////////////////////////////////////
+
+// 9.2.1.5.1
+typedef struct {
+  // RIC Call Process ID
+  // Mandatory
+  // 9.3.18
+  // [ 1 - 4294967295]
+  uint32_t ric_cpid;
+
+} e2sm_rc_cpid_t;
+
+void free_e2sm_rc_cpid(e2sm_rc_cpid_t* src); 
+
+e2sm_rc_cpid_t cp_e2sm_rc_cpid(e2sm_rc_cpid_t const* src);
+
+bool eq_e2sm_rc_cpid(e2sm_rc_cpid_t const* m0, e2sm_rc_cpid_t const* m1);
+
+
+//////////////////////////////////////
+// RIC Control Header 
+/////////////////////////////////////
+
+typedef enum{
+  FORMAT_1_E2SM_RC_CTRL_HDR,
+  FORMAT_2_E2SM_RC_CTRL_HDR,
+  END_E2SM_RC_CTRL_HDR,
+} e2sm_rc_ctrl_hdr_e; 
+
+typedef struct {
+  e2sm_rc_ctrl_hdr_e format; 
+  union{
+    e2sm_rc_ctrl_hdr_frmt_1_t frmt_1; // 9.2.1.6.1 
+    e2sm_rc_ctrl_hdr_frmt_2_t frmt_2; // 9.2.1.6.2 
+  };
+} e2sm_rc_ctrl_hdr_t;
+
+void free_e2sm_rc_ctrl_hdr( e2sm_rc_ctrl_hdr_t* src); 
+
+e2sm_rc_ctrl_hdr_t cp_e2sm_rc_ctrl_hdr(e2sm_rc_ctrl_hdr_t const* src);
+
+bool eq_e2sm_rc_ctrl_hdr(e2sm_rc_ctrl_hdr_t const* m0, e2sm_rc_ctrl_hdr_t const* m1);
+
+
+//////////////////////////////////////
+// RIC Control Message 
+/////////////////////////////////////
+
+typedef enum {
+  HANDOVER_CONTROL_7_6_4_1 = 1,
+  CONDITIONAL_HANDOVER_CONTROL_7_6_4_1 = 2,
+  DAPS_HANDOVER_CONTROL_7_6_4_1 = 3,
+} rc_ctrl_service_style_3_act_id_e;
+
+typedef enum{
+  FORMAT_1_E2SM_RC_CTRL_MSG,
+  FORMAT_2_E2SM_RC_CTRL_MSG,
+  END_E2SM_RC_CTRL_MSG,
+} e2sm_rc_ctrl_msg_e; 
+
+
+typedef struct {
+  e2sm_rc_ctrl_msg_e format; 
+  union{
+    e2sm_rc_ctrl_msg_frmt_1_t frmt_1; // 9.2.1.7.1 
+    e2sm_rc_ctrl_msg_frmt_2_t frmt_2; // 9.2.1.7.2 
+  };
+} e2sm_rc_ctrl_msg_t;
+
+void free_e2sm_rc_ctrl_msg(e2sm_rc_ctrl_msg_t* src); 
+
+e2sm_rc_ctrl_msg_t cp_e2sm_rc_ctrl_msg(e2sm_rc_ctrl_msg_t const* src);
+
+bool eq_e2sm_rc_ctrl_msg(e2sm_rc_ctrl_msg_t const* m0, e2sm_rc_ctrl_msg_t const* m1);
+
+
+
+//////////////////////////////////////
+// RIC Control Outcome 
+/////////////////////////////////////
+
+typedef enum{
+  FORMAT_1_E2SM_RC_CTRL_OUT,
+  FORMAT_2_E2SM_RC_CTRL_OUT,
+  FORMAT_3_E2SM_RC_CTRL_OUT,
+  END_E2SM_RC_CTRL_OUT,
+} e2sm_rc_ctrl_out_e; 
+
+typedef struct {
+  e2sm_rc_ctrl_out_e format; 
+  union{
+     e2sm_rc_ctrl_out_frmt_1_t frmt_1; // 9.2.1.8.1
+     e2sm_rc_ctrl_out_frmt_2_t frmt_2; // 9.2.1.8.2
+     e2sm_rc_ctrl_out_frmt_3_t frmt_3; // 9.2.1.8.3
+  };
+} e2sm_rc_ctrl_out_t;
+
+void free_e2sm_rc_ctrl_out(e2sm_rc_ctrl_out_t* src); 
+
+e2sm_rc_ctrl_out_t cp_e2sm_rc_ctrl_out( e2sm_rc_ctrl_out_t const* src);
+
+bool eq_e2sm_rc_ctrl_out(e2sm_rc_ctrl_out_t const* m0, e2sm_rc_ctrl_out_t const* m1);
+
+
+//////////////////////////////////////
+// RAN Function Definition 
+/////////////////////////////////////
+
+typedef struct {
+  //  RAN Function Name
+  //  Mandatory
+  //  9.3.2
+  //  6.2.2.1.
+  ran_function_name_t name;
+
+  // RAN Function Definition for EVENT TRIGGER
+  // Optional
+  // 9.2.2.2
+  ran_func_def_ev_trig_t* ev_trig;
+
+  // RAN Function Definition for REPORT
+  // Optional
+  // 9.2.2.3
+  ran_func_def_report_t* report;
+
+  // RAN Function Definition for INSERT
+  // Optional
+  // 9.2.2.4
+  ran_func_def_insert_t* insert;
+
+  // RAN Function Definition for CONTROL
+  // Optional
+  // 9.2.2.5
+  ran_func_def_ctrl_t* ctrl;
+
+  // RAN Function Definition for POLICY
+  // Optional
+  // 9.2.2.6
+  ran_func_def_policy_t* policy;
+
+} e2sm_rc_func_def_t;
+
+void free_e2sm_rc_func_def( e2sm_rc_func_def_t* src); 
+
+e2sm_rc_func_def_t cp_e2sm_rc_func_def(e2sm_rc_func_def_t const* src);
+
+bool eq_e2sm_rc_func_def(e2sm_rc_func_def_t const* m0, e2sm_rc_func_def_t const* m1);
+
+/////////////////////////////////////////////////
+//////////////////////////////////////////////////
+/////////////////////////////////////////////////
+
+
+/*
+ * O-RAN defined 5 Procedures: RIC Subscription, RIC Indication, RIC Control, E2 Setup and RIC Service Update 
+ * */
+
+
+///////////////
+/// RIC Subscription
+///////////////
+
+typedef struct{
+  e2sm_rc_event_trigger_t et; 
+  // [1-16]
+  size_t sz_ad;
+  e2sm_rc_action_def_t* ad;
+} rc_sub_data_t;
+
+void free_rc_sub_data(rc_sub_data_t* ind);
+
+bool eq_rc_sub_data(rc_sub_data_t const* m0, rc_sub_data_t const* m1);
+
+rc_sub_data_t cp_rc_sub_data(rc_sub_data_t const* src);
+
+///////////////
+// RIC Indication
+///////////////
+
+typedef struct{
+  e2sm_rc_ind_hdr_t hdr;
+  e2sm_rc_ind_msg_t msg;
+  e2sm_rc_cpid_t* proc_id;
+} rc_ind_data_t;
+
+void free_rc_ind_data(rc_ind_data_t* ind);
+
+bool eq_rc_ind_data(rc_ind_data_t const* m0, rc_ind_data_t const* m1);
+
+rc_ind_data_t cp_rc_ind_data(rc_ind_data_t const* src);
+
+///////////////
+// RIC Control
+///////////////
+
+typedef struct{
+  e2sm_rc_ctrl_hdr_t hdr;
+  e2sm_rc_ctrl_msg_t msg;
+} rc_ctrl_req_data_t;
+
+void free_rc_ctrl_req_data(rc_ctrl_req_data_t* src);
+
+bool eq_rc_ctrl_req_data(rc_ctrl_req_data_t const* m0, rc_ctrl_req_data_t  const* m1);
+
+rc_ctrl_req_data_t cp_rc_ctrl_req_data(rc_ctrl_req_data_t const* src);
+
+
+typedef struct{
+  e2sm_rc_ctrl_out_t* out;
+} rc_ctrl_out_data_t;
+
+///////////////
+// E2 Setup
+///////////////
+
+typedef struct{
+  e2sm_rc_func_def_t ran_func_def;
+} rc_e2_setup_t;
+
+///////////////
+// RIC Service Update
+///////////////
+
+typedef struct{
+  e2sm_rc_func_def_t func_def;
+} rc_ric_service_update_t;
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+

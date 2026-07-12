@@ -1,0 +1,131 @@
+# SPDX-License-Identifier: MIT
+
+services:
+    grafana:
+        image: grafana/grafana-oss:latest
+        container_name: grafana
+        environment:
+            - TZ=Europe/Paris
+            - GF_INSTALL_PLUGINS=frser-sqlite-datasource
+            - GF_DASHBOARDS_MIN_REFRESH_INTERVAL=1s
+        volumes:
+            - ../grafana/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+            - ../grafana/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml
+            - ../grafana/dashboards/grafana-dashboard.json:/var/lib/grafana/dashboards/dashboard.json
+            - db_dir:/var/lib/grafana/
+        networks:
+            e2_net:
+                ipv4_address: 192.168.72.158
+        ports:
+            - "3000:3000"
+
+    emu-gnb-mono:
+        image: oai-flexric:latest
+        command: "stdbuf -o0 /usr/local/flexric/emulator/agent/emu_agent_gnb"
+        container_name: emu-gnb-mono
+        depends_on:
+            - nearRT-RIC
+        networks:
+            e2_net:
+                ipv4_address: 192.168.72.150
+        volumes:
+            - ./flexric.conf:/usr/local/etc/flexric/flexric.conf
+
+    emu-cu:
+        image: oai-flexric:latest
+        command: "stdbuf -o0 /usr/local/flexric/emulator/agent/emu_agent_gnb_cu"
+        container_name: emu-cu
+        depends_on:
+            - nearRT-RIC
+        networks:
+            e2_net:
+                ipv4_address: 192.168.72.151
+        volumes:
+            - ./flexric.conf:/usr/local/etc/flexric/flexric.conf
+
+    emu-du:
+        image: oai-flexric:latest
+        command: "stdbuf -o0 /usr/local/flexric/emulator/agent/emu_agent_gnb_du"
+        container_name: emu-du
+        depends_on:
+            - nearRT-RIC
+        networks:
+            e2_net:
+                ipv4_address: 192.168.72.152
+        volumes:
+            - ./flexric.conf:/usr/local/etc/flexric/flexric.conf
+
+    nearRT-RIC:
+        image: oai-flexric:latest
+        command: "stdbuf -o0 nearRT-RIC"
+        container_name: nearRT-RIC
+        networks:
+            e2_net:
+                ipv4_address: 192.168.72.154
+        volumes:
+            - ./flexric.conf:/usr/local/etc/flexric/flexric.conf
+
+    xapp-kpm-moni:
+        image: oai-flexric:latest
+        command: "stdbuf -o0 /usr/local/flexric/xApp/c/monitor/xapp_kpm_moni -d /db_dir/ -n xapp_db"
+        container_name: xapp-kpm-moni
+        environment:
+            - XAPP_DURATION=20
+        depends_on:
+            - nearRT-RIC
+            - emu-gnb-mono
+            - emu-cu
+            - emu-du
+        networks:
+            e2_net:
+                ipv4_address: 192.168.72.155
+        volumes:
+            - ./flexric.conf:/usr/local/etc/flexric/flexric.conf
+            - db_dir:/db_dir
+
+    xapp-rc-moni:
+        image: oai-flexric:latest
+        command: "stdbuf -o0 /usr/local/flexric/xApp/c/monitor/xapp_rc_moni"
+        container_name: xapp-rc-moni
+        environment:
+            - XAPP_DURATION=20
+        depends_on:
+            - nearRT-RIC
+            - emu-gnb-mono
+            - emu-cu
+            - emu-du
+        networks:
+            e2_net:
+                ipv4_address: 192.168.72.156
+        volumes:
+            - ./flexric.conf:/usr/local/etc/flexric/flexric.conf
+
+    xapp-gtp-mac-rlc-pdcp-moni:
+        image: oai-flexric:latest
+        command: "stdbuf -o0 /usr/local/flexric/xApp/c/monitor/xapp_gtp_mac_rlc_pdcp_moni"
+        container_name: xapp-gtp-mac-rlc-pdcp-moni
+        environment:
+            - XAPP_DURATION=20
+        depends_on:
+            - nearRT-RIC
+            - emu-gnb-mono
+            - emu-cu
+            - emu-du
+        networks:
+            e2_net:
+                ipv4_address: 192.168.72.157
+        volumes:
+            - ./flexric.conf:/usr/local/etc/flexric/flexric.conf
+
+networks:
+    e2_net:
+        driver: bridge
+        name: oai-e2-net
+        ipam:
+            config:
+                - subnet: 192.168.72.0/24
+        driver_opts:
+            com.docker.network.bridge.name: "e2"
+
+volumes:
+  db_dir:

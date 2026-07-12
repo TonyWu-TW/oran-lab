@@ -1,0 +1,54 @@
+/*
+ * model_5_gvn_group_configuration.h
+ *
+ * Contains 5G Vn Group Configuration
+ */
+
+#ifndef _OpenAPI_model_5_gvn_group_configuration_H_
+#define _OpenAPI_model_5_gvn_group_configuration_H_
+
+#include <string.h>
+#include "../external/cJSON.h"
+#include "../include/list.h"
+#include "../include/keyValuePair.h"
+#include "../include/binary.h"
+typedef struct OpenAPI_model_5_gvn_group_configuration_s OpenAPI_model_5_gvn_group_configuration_t;
+#include "model_5_gvn_group_data.h"
+#include "object.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct OpenAPI_model_5_gvn_group_configuration_s {
+    struct OpenAPI_model_5_gvn_group_data_s *_5g_vn_group_data;
+    OpenAPI_list_t *members;
+    bool is_reference_id;
+    int reference_id;
+    char *af_instance_id;
+    char *internal_group_identifier;
+    char *mtc_provider_information;
+    OpenAPI_list_t* members_data;
+};
+
+OpenAPI_model_5_gvn_group_configuration_t *OpenAPI_model_5_gvn_group_configuration_create(
+    OpenAPI_model_5_gvn_group_data_t *_5g_vn_group_data,
+    OpenAPI_list_t *members,
+    bool is_reference_id,
+    int reference_id,
+    char *af_instance_id,
+    char *internal_group_identifier,
+    char *mtc_provider_information,
+    OpenAPI_list_t* members_data
+);
+void OpenAPI_model_5_gvn_group_configuration_free(OpenAPI_model_5_gvn_group_configuration_t *model_5_gvn_group_configuration);
+OpenAPI_model_5_gvn_group_configuration_t *OpenAPI_model_5_gvn_group_configuration_parseFromJSON(cJSON *model_5_gvn_group_configurationJSON);
+cJSON *OpenAPI_model_5_gvn_group_configuration_convertToJSON(OpenAPI_model_5_gvn_group_configuration_t *model_5_gvn_group_configuration);
+OpenAPI_model_5_gvn_group_configuration_t *OpenAPI_model_5_gvn_group_configuration_copy(OpenAPI_model_5_gvn_group_configuration_t *dst, OpenAPI_model_5_gvn_group_configuration_t *src);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _OpenAPI_model_5_gvn_group_configuration_H_ */
+

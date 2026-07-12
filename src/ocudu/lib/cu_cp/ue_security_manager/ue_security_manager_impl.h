@@ -1,0 +1,44 @@
+// SPDX-FileCopyrightText: Copyright (C) 2021-2026 Software Radio Systems Limited
+// SPDX-License-Identifier: BSD-3-Clause-Open-MPI
+// Portions of this file may implement 3GPP specifications, which may be subject to additional licensing requirements.
+
+#pragma once
+
+#include "ocudu/cu_cp/security_manager_config.h"
+
+namespace ocudu::ocucp {
+
+/// UE security manager implementation
+class ue_security_manager
+{
+public:
+  ue_security_manager(const security_manager_config& cfg_);
+  ~ue_security_manager() = default;
+
+  // up_ue_security_manager
+  [[nodiscard]] bool                        is_security_context_initialized() const;
+  [[nodiscard]] security::sec_as_config     get_up_as_config() const;
+  [[nodiscard]] security::sec_128_as_config get_up_128_as_config() const;
+  [[nodiscard]] uint8_t                     get_ncc() const;
+
+  // ngap_ue_security_manager
+  [[nodiscard]] bool init_security_context(const security::security_context& sec_ctxt);
+  [[nodiscard]] bool finalize_security_context();
+  [[nodiscard]] bool is_security_enabled() const;
+
+  // rrc_ue_security_manager
+  [[nodiscard]] security::security_context   get_security_context() const;
+  [[nodiscard]] security::sec_selected_algos get_security_algos() const;
+  [[nodiscard]] security::sec_as_config      get_rrc_as_config() const;
+  [[nodiscard]] security::sec_128_as_config  get_rrc_128_as_config() const;
+  void                                       update_security_context(const security::security_context& sec_ctxt);
+  void perform_horizontal_key_derivation(pci_t target_pci, unsigned target_ssb_arfcn);
+
+private:
+  security_manager_config    cfg;
+  security::security_context sec_context;
+
+  ocudulog::basic_logger& logger;
+};
+
+} // namespace ocudu::ocucp

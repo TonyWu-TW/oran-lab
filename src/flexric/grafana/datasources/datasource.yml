@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT
+
+apiVersion: 1
+datasources:
+  - name: SQLite
+    type: frser-sqlite-datasource
+    access: proxy
+    url: ''
+    isDefault: true
+    jsonData:
+      path: /var/lib/grafana/xapp_db
+

@@ -1,0 +1,115 @@
+// SPDX-FileCopyrightText: Copyright (C) 2021-2026 Software Radio Systems Limited
+// SPDX-License-Identifier: BSD-3-Clause-Open-MPI
+// Portions of this file may implement 3GPP specifications, which may be subject to additional licensing requirements.
+
+#pragma once
+
+#include "ocudu/adt/slotted_array.h"
+#include "ocudu/du/du_high/du_manager/du_manager.h"
+#include "ocudu/f1ap/du/f1ap_du.h"
+#include "ocudu/support/timers.h"
+
+namespace ocudu {
+
+class timer_manager;
+
+namespace odu {
+
+class f1ap_ue_task_scheduler_adapter final : public f1ap_ue_task_scheduler
+{
+public:
+  explicit f1ap_ue_task_scheduler_adapter(du_ue_index_t ue_index_, timer_factory timers_) :
+    ue_index(ue_index_), timers(timers_)
+  {
+  }
+
+  unique_timer create_timer() override { return timers.create_timer(); }
+
+  void schedule_async_task(async_task<void>&& task) override { du_mng->schedule_async_task(ue_index, std::move(task)); }
+
+  void connect(du_manager_f1ap_event_handler& du_mng_) { du_mng = &du_mng_; }
+
+private:
+  du_ue_index_t                  ue_index;
+  timer_factory                  timers;
+  du_manager_f1ap_event_handler* du_mng = nullptr;
+};
+
+class f1ap_du_configurator_adapter : public f1ap_du_configurator
+{
+public:
+  explicit f1ap_du_configurator_adapter(timer_factory timers_) : timers(timers_)
+  {
+    for (unsigned i = 0; i != MAX_NOF_DU_UES; ++i) {
+      ues.emplace(i, to_du_ue_index(i), timers);
+    }
+  }
+
+  void connect(du_manager_f1ap_event_handler& du_mng_)
+  {
+    du_mng = &du_mng_;
+    for (unsigned i = 0; i != MAX_NOF_DU_UES; ++i) {
+      ues[i].connect(*du_mng);
+    }
+  }
+
+  timer_factory& get_timer_factory() override { return timers; }
+
+  void schedule_async_task(async_task<void>&& task) override { du_mng->schedule_async_task(std::move(task)); }
+
+  f1ap_ue_task_scheduler& get_ue_handler(du_ue_index_t ue_index) override { return ues[ue_index]; }
+
+  void on_f1c_disconnection() override { return du_mng->handle_f1c_connection_loss(); }
+
+  async_task<void> request_reset(const std::vector<du_ue_index_t>& ues_to_reset) override
+  {
+    return du_mng->handle_f1_reset_request(ues_to_reset);
+  }
+
+  du_ue_index_t find_free_ue_index() override { return du_mng->find_unused_du_ue_index(); }
+
+  async_task<f1ap_ue_context_creation_response>
+  request_ue_creation(const f1ap_ue_context_creation_request& request) override
+  {
+    return du_mng->handle_ue_context_creation(request);
+  }
+
+  async_task<f1ap_ue_context_update_response>
+  request_ue_context_update(const f1ap_ue_context_update_request& request) override
+  {
+    return du_mng->handle_ue_context_update(request);
+  }
+
+  async_task<void> request_ue_removal(const f1ap_ue_delete_request& request) override
+  {
+    return du_mng->handle_ue_delete_request(request);
+  }
+
+  async_task<void> request_ue_drb_deactivation(du_ue_index_t ue_index) override
+  {
+    return du_mng->handle_ue_drb_deactivation_request(ue_index);
+  }
+
+  async_task<gnbcu_config_update_response>
+  request_cu_context_update(const gnbcu_config_update_request& request) override
+  {
+    return du_mng->handle_cu_context_update_request(request);
+  }
+
+  void notify_reestablishment_of_old_ue(du_ue_index_t new_ue_index, du_ue_index_t old_ue_index) override
+  {
+    du_mng->handle_ue_reestablishment(new_ue_index, old_ue_index);
+  }
+
+  void on_ue_config_applied(du_ue_index_t ue_index) override { du_mng->handle_ue_config_applied(ue_index); }
+
+  f1ap_du_positioning_handler& get_positioning_handler() override { return du_mng->get_positioning_handler(); }
+
+private:
+  timer_factory                                                 timers;
+  du_manager_f1ap_event_handler*                                du_mng = nullptr;
+  slotted_array<f1ap_ue_task_scheduler_adapter, MAX_NOF_DU_UES> ues;
+};
+
+} // namespace odu
+} // namespace ocudu

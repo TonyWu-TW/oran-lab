@@ -1,0 +1,62 @@
+/*
+ * policy_data_subscription.h
+ *
+ * Identifies a subscription to policy data change notification.
+ */
+
+#ifndef _OpenAPI_policy_data_subscription_H_
+#define _OpenAPI_policy_data_subscription_H_
+
+#include <string.h>
+#include "../external/cJSON.h"
+#include "../include/list.h"
+#include "../include/keyValuePair.h"
+#include "../include/binary.h"
+typedef struct OpenAPI_policy_data_subscription_s OpenAPI_policy_data_subscription_t;
+#include "policy_data_change_notification.h"
+#include "resource_item.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct OpenAPI_policy_data_subscription_s {
+    char *notification_uri;
+    char *notif_id;
+    OpenAPI_list_t *monitored_resource_uris;
+    OpenAPI_list_t *mon_res_items;
+    OpenAPI_list_t *excluded_res_items;
+    bool is_imm_rep;
+    int imm_rep;
+    OpenAPI_list_t *imm_reports;
+    char *expiry;
+    char *supported_features;
+    OpenAPI_list_t *reset_ids;
+    char *subs_id;
+};
+
+OpenAPI_policy_data_subscription_t *OpenAPI_policy_data_subscription_create(
+    char *notification_uri,
+    char *notif_id,
+    OpenAPI_list_t *monitored_resource_uris,
+    OpenAPI_list_t *mon_res_items,
+    OpenAPI_list_t *excluded_res_items,
+    bool is_imm_rep,
+    int imm_rep,
+    OpenAPI_list_t *imm_reports,
+    char *expiry,
+    char *supported_features,
+    OpenAPI_list_t *reset_ids,
+    char *subs_id
+);
+void OpenAPI_policy_data_subscription_free(OpenAPI_policy_data_subscription_t *policy_data_subscription);
+OpenAPI_policy_data_subscription_t *OpenAPI_policy_data_subscription_parseFromJSON(cJSON *policy_data_subscriptionJSON);
+cJSON *OpenAPI_policy_data_subscription_convertToJSON(OpenAPI_policy_data_subscription_t *policy_data_subscription);
+OpenAPI_policy_data_subscription_t *OpenAPI_policy_data_subscription_copy(OpenAPI_policy_data_subscription_t *dst, OpenAPI_policy_data_subscription_t *src);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _OpenAPI_policy_data_subscription_H_ */
+

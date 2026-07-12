@@ -1,0 +1,71 @@
+/*
+ * communication_characteristics.h
+ *
+ * Contains Communication Characteristics
+ */
+
+#ifndef _OpenAPI_communication_characteristics_H_
+#define _OpenAPI_communication_characteristics_H_
+
+#include <string.h>
+#include "../external/cJSON.h"
+#include "../include/list.h"
+#include "../include/keyValuePair.h"
+#include "../include/binary.h"
+typedef struct OpenAPI_communication_characteristics_s OpenAPI_communication_characteristics_t;
+#include "pp_active_time.h"
+#include "pp_dl_packet_count_ext.h"
+#include "pp_maximum_latency.h"
+#include "pp_maximum_response_time.h"
+#include "pp_subs_reg_timer.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct OpenAPI_communication_characteristics_s {
+    bool is_pp_subs_reg_timer_null;
+    struct OpenAPI_pp_subs_reg_timer_s *pp_subs_reg_timer;
+    bool is_pp_active_time_null;
+    struct OpenAPI_pp_active_time_s *pp_active_time;
+    bool is_pp_dl_packet_count_null;
+    bool is_pp_dl_packet_count;
+    int pp_dl_packet_count;
+    bool is_pp_dl_packet_count_ext_null;
+    struct OpenAPI_pp_dl_packet_count_ext_s *pp_dl_packet_count_ext;
+    bool is_pp_maximum_response_time_null;
+    struct OpenAPI_pp_maximum_response_time_s *pp_maximum_response_time;
+    bool is_pp_maximum_latency_null;
+    struct OpenAPI_pp_maximum_latency_s *pp_maximum_latency;
+    bool is_pp_mps_msg_indication;
+    int pp_mps_msg_indication;
+};
+
+OpenAPI_communication_characteristics_t *OpenAPI_communication_characteristics_create(
+    bool is_pp_subs_reg_timer_null,
+    OpenAPI_pp_subs_reg_timer_t *pp_subs_reg_timer,
+    bool is_pp_active_time_null,
+    OpenAPI_pp_active_time_t *pp_active_time,
+    bool is_pp_dl_packet_count_null,
+    bool is_pp_dl_packet_count,
+    int pp_dl_packet_count,
+    bool is_pp_dl_packet_count_ext_null,
+    OpenAPI_pp_dl_packet_count_ext_t *pp_dl_packet_count_ext,
+    bool is_pp_maximum_response_time_null,
+    OpenAPI_pp_maximum_response_time_t *pp_maximum_response_time,
+    bool is_pp_maximum_latency_null,
+    OpenAPI_pp_maximum_latency_t *pp_maximum_latency,
+    bool is_pp_mps_msg_indication,
+    int pp_mps_msg_indication
+);
+void OpenAPI_communication_characteristics_free(OpenAPI_communication_characteristics_t *communication_characteristics);
+OpenAPI_communication_characteristics_t *OpenAPI_communication_characteristics_parseFromJSON(cJSON *communication_characteristicsJSON);
+cJSON *OpenAPI_communication_characteristics_convertToJSON(OpenAPI_communication_characteristics_t *communication_characteristics);
+OpenAPI_communication_characteristics_t *OpenAPI_communication_characteristics_copy(OpenAPI_communication_characteristics_t *dst, OpenAPI_communication_characteristics_t *src);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _OpenAPI_communication_characteristics_H_ */
+

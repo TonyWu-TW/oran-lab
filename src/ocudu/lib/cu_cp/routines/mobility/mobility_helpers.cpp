@@ -1,0 +1,141 @@
+// SPDX-FileCopyrightText: Copyright (C) 2021-2026 Software Radio Systems Limited
+// SPDX-License-Identifier: BSD-3-Clause-Open-MPI
+// Portions of this file may implement 3GPP specifications, which may be subject to additional licensing requirements.
+
+#include "mobility_helpers.h"
+#include "../pdu_session_routine_helpers.h"
+
+using namespace ocudu;
+using namespace ocudu::ocucp;
+
+bool ocudu::ocucp::handle_context_setup_response(
+    cu_cp_intra_cu_handover_response&         response_msg,
+    e1ap_bearer_context_modification_request& bearer_context_modification_request,
+    const f1ap_ue_context_setup_response&     target_ue_context_setup_response,
+    up_config_update&                         next_config,
+    const ocudulog::basic_logger&             logger,
+    bool                                      reestablish_pdcp)
+{
+  // Sanity checks.
+  if (target_ue_context_setup_response.ue_index == cu_cp_ue_index_t::invalid) {
+    logger.warning("Failed to create UE at the target DU");
+    return false;
+  }
+
+  if (!target_ue_context_setup_response.srbs_failed_to_be_setup_list.empty()) {
+    logger.warning("Couldn't setup {} SRBs at target DU",
+                   target_ue_context_setup_response.srbs_failed_to_be_setup_list.size());
+    return false;
+  }
+
+  if (!target_ue_context_setup_response.drbs_failed_to_be_setup_list.empty()) {
+    logger.warning("Couldn't setup {} DRBs at target DU",
+                   target_ue_context_setup_response.drbs_failed_to_be_setup_list.size());
+    return false;
+  }
+
+  if (!target_ue_context_setup_response.c_rnti.has_value()) {
+    logger.warning("No C-RNTI present in UE context setup");
+    return false;
+  }
+
+  // Create bearer context mod request.
+  if (!target_ue_context_setup_response.drbs_setup_list.empty()) {
+    auto& context_mod_request = bearer_context_modification_request.ng_ran_bearer_context_mod_request.emplace();
+
+    // Extract new DL tunnel information for CU-UP.
+    for (const auto& pdu_session : next_config.pdu_sessions_to_setup_list) {
+      // The modifications are only for this PDU session.
+      e1ap_pdu_session_res_to_modify_item e1ap_mod_item;
+      e1ap_mod_item.pdu_session_id = pdu_session.first;
+
+      for (const auto& drb_item : pdu_session.second.drb_to_add) {
+        auto drb_it = std::find_if(target_ue_context_setup_response.drbs_setup_list.begin(),
+                                   target_ue_context_setup_response.drbs_setup_list.end(),
+                                   [&drb_item](const auto& drb) { return drb.drb_id == drb_item.first; });
+        ocudu_assert(drb_it != target_ue_context_setup_response.drbs_setup_list.end(),
+                     "Couldn't find {} in UE context setup response",
+                     drb_item.first);
+        const auto& context_setup_drb_item = *drb_it;
+
+        e1ap_drb_to_modify_item_ng_ran e1ap_drb_item;
+        e1ap_drb_item.drb_id = drb_item.first;
+
+        for (const auto& dl_up_tnl_info : context_setup_drb_item.dluptnl_info_list) {
+          e1ap_up_params_item e1ap_dl_up_param;
+          e1ap_dl_up_param.up_tnl_info   = dl_up_tnl_info;
+          e1ap_dl_up_param.cell_group_id = 0; // TODO: Remove hardcoded value
+
+          e1ap_drb_item.dl_up_params.push_back(e1ap_dl_up_param);
+        }
+
+        if (reestablish_pdcp) {
+          // Reestablish PDCP.
+          e1ap_drb_item.pdcp_cfg.emplace();
+          fill_e1ap_drb_pdcp_config(e1ap_drb_item.pdcp_cfg.value(), drb_item.second.pdcp_cfg);
+          e1ap_drb_item.pdcp_cfg->pdcp_reest = true;
+        }
+
+        e1ap_mod_item.drb_to_modify_list_ng_ran.emplace(e1ap_drb_item.drb_id, e1ap_drb_item);
+      }
+
+      context_mod_request.pdu_session_res_to_modify_list.emplace(e1ap_mod_item.pdu_session_id, e1ap_mod_item);
+    }
+  }
+
+  return target_ue_context_setup_response.success;
+}
+
+bool ocudu::ocucp::handle_bearer_context_modification_response(
+    cu_cp_intra_cu_handover_response&                response_msg,
+    f1ap_ue_context_modification_request&            source_ue_context_mod_request,
+    const e1ap_bearer_context_modification_response& bearer_context_modification_response,
+    up_config_update&                                next_config,
+    const ocudulog::basic_logger&                    logger)
+
+{
+  // TOOD: Add proper handling.
+  return bearer_context_modification_response.success;
+}
+
+unsigned ocudu::ocucp::cancel_cho_candidates(cu_cp_ue&         source_ue,
+                                             ue_manager&       ue_mng,
+                                             xnap_repository*  xnap_db,
+                                             cu_cp_ue_index_t  winner_ue_index,
+                                             peer_xnap_ue_id_t winner_peer_xnap_ue_id)
+{
+  unsigned cancelled = 0;
+  auto&    cho_ctx   = source_ue.get_cho_context();
+  if (!cho_ctx.has_value()) {
+    return 0;
+  }
+  const cu_cp_ue_index_t source_ue_index = source_ue.get_ue_index();
+  const bool             has_xnap_winner = winner_peer_xnap_ue_id != peer_xnap_ue_id_t::invalid;
+  for (const auto& candidate : cho_ctx->candidates) {
+    if (candidate.is_inter_cu()) {
+      if (has_xnap_winner && candidate.peer_xnap_ue_id == winner_peer_xnap_ue_id) {
+        continue;
+      }
+      if (xnap_db != nullptr && candidate.xnc_index.has_value()) {
+        xnap_interface* xnap = xnap_db->find_xnap(*candidate.xnc_index);
+        if (xnap != nullptr) {
+          xnap->handle_cho_cancel_required(source_ue_index, candidate.target_cgi);
+          ++cancelled;
+        }
+      }
+    } else {
+      if (candidate.target_ue_index == cu_cp_ue_index_t::invalid || candidate.target_ue_index == source_ue_index ||
+          candidate.target_ue_index == winner_ue_index) {
+        continue;
+      }
+      auto* cand_ue = ue_mng.find_du_ue(candidate.target_ue_index);
+      if (cand_ue == nullptr) {
+        continue;
+      }
+      cand_ue->get_rrc_ue()->cancel_handover_reconfiguration_transaction(
+          static_cast<uint8_t>(candidate.rrc_reconfig_transaction_id));
+      ++cancelled;
+    }
+  }
+  return cancelled;
+}

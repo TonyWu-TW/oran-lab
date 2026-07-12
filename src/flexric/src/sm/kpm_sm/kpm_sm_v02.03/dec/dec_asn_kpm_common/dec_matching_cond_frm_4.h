@@ -1,0 +1,16 @@
+/*
+ * SPDX-License-Identifier: LicenseRef-CSSL-1.0
+ */
+
+#ifndef DECODING_MATCHING_CONDITION_FORMAT_4_KPM_V2_H
+#define DECODING_MATCHING_CONDITION_FORMAT_4_KPM_V2_H
+
+
+
+#include "../../ie/asn/MatchingUeCondPerSubItem.h"
+#include "../../ie/kpm_data_ie/data/matching_cond_frm_4_lst.h"
+
+matching_condition_format_4_lst_t kpm_dec_matching_cond_frm_4_asn(const MatchingUeCondPerSubItem_t * matching_cond_asn);
+
+
+#endif
