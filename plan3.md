@@ -167,20 +167,45 @@ sudo apt update
 sudo apt install -y gnuradio
 ```
 
-确认版本与 ZeroMQ blocks：
+确认版本与 ZeroMQ blocks。GNU Radio Companion 3.10.1.1 不支持
+`gnuradio-companion --version`，因此版本统一使用
+`gnuradio-config-info --version` 检查：
 
 ```bash
-gnuradio-companion --version
 gnuradio-config-info --version
 gnuradio-config-info --enabled-components | tr ';' '\n' | grep -Ei 'zeromq|gr-zeromq'
 
-python3 - <<'PY'
+/usr/bin/python3 - <<'PY'
 from gnuradio import gr, zeromq
+print("GNU Radio version:", gr.version())
 print("GNU Radio runtime and ZeroMQ blocks are available")
 PY
 ```
 
-若 `from gnuradio import zeromq` 失败，先检查 Ubuntu package 是否完整，不要继续修改 gNB/UE config。
+本实验机目前的默认 `python3` 是
+`/home/zju/anaconda3/bin/python3`（Python 3.12），而 Ubuntu apt 安装的
+GNU Radio Python 模块属于 `/usr/bin/python3`。因此 Plan 3 中所有 GNU Radio
+flowgraph 的检查与执行都必须明确使用 `/usr/bin/python3`，不要使用默认的
+Anaconda `python3`，也不要把两个 Python 环境的 `site-packages` 混在一起。
+
+可以用以下指令再次确认解释器顺序：
+
+```bash
+which -a python3
+head -n 1 "$(command -v gnuradio-companion)"
+/usr/bin/python3 -c 'from gnuradio import gr, zeromq; print(gr.version())'
+```
+
+本机已于实际检查中得到：
+
+```text
+GNU Radio version: 3.10.1.1
+GNU Radio runtime and ZeroMQ blocks are available
+```
+
+这表示 GNU Radio runtime 与 `gr-zeromq` 已通过安装检查。若未来
+`/usr/bin/python3` 也出现 `ModuleNotFoundError`，才需要检查或修复 Ubuntu
+package；不要因为 Anaconda 的 import 失败而重装 GNU Radio。
 
 ## 6. 下载并保留官方 Broker 范例
 
@@ -219,7 +244,103 @@ gnuradio-companion /home/zju/Desktop/oran-lab/radio/broker/flows/multi_ue_3.grc
 
 如果 GRC 提示旧版格式转换，另存回 `flows/multi_ue_3.grc`，不要覆盖 `upstream` 原档。
 
-## 7. 固定三台 UE 的身份、port 与档名
+### 6.1 目前画面代表什么
+
+只要窗口标题显示的是：
+
+```text
+/home/zju/Desktop/oran-lab/radio/broker/flows/multi_ue_3.grc
+```
+
+而且画面中能看到 `ZMQ REQ Source`、`ZMQ REP Sink`、`Throttle`、
+`Multiply Const` 和 `Add`，就表示官方 Flowgraph 已正确下载并能被 GRC
+解析。右侧的 block 分类清单只是 GNU Radio 元件库，本阶段不需要从那里新增
+任何 block。
+
+这个 Flowgraph 只处理 gNB 与 UE 之间的 complex I/Q samples，不保存 IMSI、
+IMEI、K、OPc、APN 或 namespace。那些身份参数在第 9、10 节处理，不要在
+GRC 画面里寻找。
+
+官方图的资料流如下：
+
+```text
+Downlink:
+gNB TX 2000 -> Throttle -> 三份 Multiply Const -> UE RX 2100/2200/2300
+
+Uplink:
+UE TX 2101/2201/2301 -> 三份 Multiply Const -> Add -> gNB RX 2001
+```
+
+画面中的 `Multiply Const` 数值 `1`、约 `0.316`、`0.1` 分别来自官方
+UE1/UE2/UE3 的 `0/10/20 dB` path loss。它们不是 port，也不是错误；第一轮
+不要修改这些方块或右侧的 Pathloss 控制。
+
+### 6.2 现在在 GRC 只修改一个值
+
+目前专案内已经跑通的 gNB 和 srsUE 都是 `20 MHz / 23.04e6`，但官方
+Flowgraph 是 `10 MHz / 11.52e6`。因此现在只修改 `samp_rate`：
+
+1. 在画面上方找到 `Variable` 方块，确认 `ID: samp_rate`、`Value: 11.52M`。
+2. 双击该方块。
+3. 将 Value 从 `11520000` 改成 `23040000`。
+4. 按 OK。
+5. 确认方块显示 `Value: 23.04M`。
+6. 确认 `Throttle` 自动由 `2.88M` 变成 `5.76M`。
+7. 按 `Ctrl+S` 保存；窗口标题前面的 `*` 应该消失。
+
+`Throttle` 之所以显示 `5.76M`，是因为官方公式是：
+
+```python
+1.0 * samp_rate / (1.0 * slow_down_ratio)
+```
+
+而 `slow_down_ratio` 默认是 `4`。这里不要把 Throttle 直接改成
+`23.04e6`，也不要修改 `slow_down_ratio`。
+
+从目前画面已经确认官方 port 拓扑正确，以下方块都不要修改：
+
+| Flowgraph 角色 | Block | Address |
+| --- | --- | --- |
+| 接收 gNB Downlink | ZMQ REQ Source | `tcp://127.0.0.1:2000` |
+| 发送给 UE1 | ZMQ REP Sink | `tcp://127.0.0.1:2100` |
+| 发送给 UE2 | ZMQ REP Sink | `tcp://127.0.0.1:2200` |
+| 发送给 UE3 | ZMQ REP Sink | `tcp://127.0.0.1:2300` |
+| 接收 UE1 Uplink | ZMQ REQ Source | `tcp://127.0.0.1:2101` |
+| 接收 UE2 Uplink | ZMQ REQ Source | `tcp://127.0.0.1:2201` |
+| 接收 UE3 Uplink | ZMQ REQ Source | `tcp://127.0.0.1:2301` |
+| 发送给 gNB | ZMQ REP Sink | `tcp://127.0.0.1:2001` |
+
+保存后在 terminal 检查，不需要继续拖动或重新接线：
+
+```bash
+FLOW=/home/zju/Desktop/oran-lab/radio/broker/flows/multi_ue_3.grc
+
+grep -nE "23040000|23.04e6|11520000" "$FLOW"
+grep -oE 'tcp://127\.0\.0\.1:[0-9]+' "$FLOW" | sort -Vu
+```
+
+第一条输出必须能看到 `23040000` 或 `23.04e6`，而且不能再看到
+`11520000`。第二条应该正好列出：
+
+```text
+tcp://127.0.0.1:2000
+tcp://127.0.0.1:2001
+tcp://127.0.0.1:2100
+tcp://127.0.0.1:2101
+tcp://127.0.0.1:2200
+tcp://127.0.0.1:2201
+tcp://127.0.0.1:2300
+tcp://127.0.0.1:2301
+```
+
+到这里关闭 GRC 即可，**现在不要按 Execute/播放键**。Flowgraph 要等到
+Open5GS、gNB 和三台 UE 都启动后，才在第 14 节最后执行。
+
+## 7. 固定三台 UE 的身份、port 与档名（本节只确认规划）
+
+本节不需要操作 GNU Radio Companion，也还不需要输入命令。这里只是先固定
+后面建立三份 srsUE config 与 Open5GS subscriber 时要使用的数值；实际档案
+在第 9 节建立，Open5GS subscriber 在第 10 节建立。
 
 第三阶段先固定以下规划，不在测试过程中临时换值：
 
@@ -240,6 +361,14 @@ SST = 1
 ```
 
 IMSI 必须不同。namespace、log、PCAP 与 ZMQ port 也必须不同。
+
+表格里的 RX/TX 是从 UE 角度命名：
+
+- UE1 `rx_port=2100` 对应 Flowgraph 的 `ZMQ REP Sink 2100`，用于接收下行。
+- UE1 `tx_port=2101` 对应 Flowgraph 的 `ZMQ REQ Source 2101`，用于送出上行。
+- UE2、UE3 依相同规则分别使用 `2200/2201`、`2300/2301`。
+
+因此 GRC 只需要知道这些 port，不需要知道每台 UE 的 IMSI 或密钥。
 
 ## 8. 建立多 UE gNB config
 
@@ -503,13 +632,17 @@ sudo iptables -I FORWARD 2 -d 10.45.0.0/16 -o ogstun -m conntrack --ctstate RELA
 
 ## 12. 调整 GNU Radio flowgraph
 
+第 6 节已经完成 `samp_rate` 修改与 port 检查。本节是建立完 gNB、三份 UE
+config 和 namespace 后的最终复查，不要重新设计 Flowgraph，也不要交换
+REQ/REP 或重新接线。
+
 打开：
 
 ```bash
 gnuradio-companion /home/zju/Desktop/oran-lab/radio/broker/flows/multi_ue_3.grc
 ```
 
-按顺序检查，不要凭感觉交换 REQ/REP 或 bind/connect：
+按顺序复查：
 
 1. gNB TX/RX 使用官方的 `2000/2001`。
 2. UE1 使用 `2100/2101`。
@@ -520,9 +653,18 @@ gnuradio-companion /home/zju/Desktop/oran-lab/radio/broker/flows/multi_ue_3.grc
 7. Downlink 有三条复制路径。
 8. Uplink 三条路径经过 Add 后才送回 gNB。
 9. 第一轮不要增加 AWGN、fading、delay、FFT 或额外 GUI block。
-10. 第一轮 path loss 保持官方默认或三台相同，先排除信道差异。
+10. 第一轮保留官方 `0/10/20 dB` path loss，不在 attach 过程中拖动滑杆。
 
-在 GRC 中搜寻所有 sample-rate variable，确保没有遗留官方 10 MHz 范例的 `11.52e6`。
+先用文字检查确保没有遗留官方 10 MHz 的 `11520000`：
+
+```bash
+FLOW=/home/zju/Desktop/oran-lab/radio/broker/flows/multi_ue_3.grc
+if grep -n '11520000' "$FLOW"; then
+  echo "ERROR: Flowgraph 仍是官方 10 MHz sample rate"
+else
+  echo "OK: 未发现 11.52e6"
+fi
+```
 
 保存后先让 GRC 产生 Python：
 
@@ -536,7 +678,7 @@ grcc \
 
 ```bash
 find /home/zju/Desktop/oran-lab/radio/broker/build -maxdepth 1 -type f -print
-python3 -m py_compile /home/zju/Desktop/oran-lab/radio/broker/build/*.py
+/usr/bin/python3 -m py_compile /home/zju/Desktop/oran-lab/radio/broker/build/*.py
 ```
 
 如果官方 graph 仍包含 Qt GUI，第一次可直接在 GNU Radio Companion 按 Execute。第三阶段跑通后再复制一个 No GUI 版本用于脚本，不在第一轮同时改 GUI 架构。
@@ -650,7 +792,7 @@ gnuradio-companion /home/zju/Desktop/oran-lab/radio/broker/flows/multi_ue_3.grc
 如果已产生可直接执行的 Python 且不依赖额外 GUI 操作：
 
 ```bash
-python3 /home/zju/Desktop/oran-lab/radio/broker/build/multi_ue_3.py \
+/usr/bin/python3 /home/zju/Desktop/oran-lab/radio/broker/build/multi_ue_3.py \
   2>&1 | tee /home/zju/Desktop/oran-lab/logs/stage3/broker.log
 ```
 
@@ -943,7 +1085,7 @@ status_stage3.sh
 
 以下全部通过才算 Plan 3 完成：
 
-- [ ] GNU Radio 与 ZeroMQ blocks 可用。
+- [x] GNU Radio 3.10.1.1 与 ZeroMQ blocks 可用（使用 `/usr/bin/python3`）。
 - [ ] 官方 `multi_ue_scenario.grc` 已保留在 `upstream`。
 - [ ] OCUDU 多 UE config 没有覆盖单 UE config。
 - [ ] 三份 srsUE config 的 IMSI、ports、namespace、log 都不同。
