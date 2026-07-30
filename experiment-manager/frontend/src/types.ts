@@ -140,6 +140,17 @@ export type VoiceGuardStatus = {
   running: boolean
   state: 'OFF' | 'STARTING' | 'OBSERVING' | 'WOULD_PROTECT' | 'PROTECTING' | 'COOLDOWN' | 'STOPPING' | 'ERROR'
   mode: 'observe_only' | 'closed_loop'
+  algorithm?: 'rules' | 'random_forest'
+  model_name?: string
+  model_path?: string
+  model_trained_at?: number
+  predicted_policy?: string | null
+  prediction_confidence?: number | null
+  policy_probabilities?: Record<string, number>
+  feature_importance?: Record<string, number>
+  current_features?: Record<string, number>
+  inference_ms?: number
+  active_voice_ues?: string[]
   e2_adapter?: string
   e2_connected?: boolean
   native_control: boolean

@@ -53,21 +53,24 @@ Throughput。多 UE exporter 由
 
 RTP-like voice runner 使用獨立 sender/receiver：sender 固定依 packet interval 發包，
 不會因等待 echo 而降低 Offered bitrate；每秒回報 Offered/Received bitrate、三秒
-rolling loss、delivery ratio、jitter、平均 RTT 與 RTT P95。Live 的 UE3 Voice
-Quality 圖會把固定 Offered 虛線、實際 Received 實線及 loss/jitter/RTT 分開呈現。
+rolling loss、delivery ratio、jitter、平均 RTT 與 RTT P95。Live 的 UE9/UE10 Voice
+Quality 圖會取目前通話 UE 的最差品質，並把 Offered、Received 與
+loss/jitter/RTT 分開呈現。
 
 Live 頁也提供 Python `VoiceGuard` xApp 的啟停、Observe Only / Closed Loop 切換與
-狀態機畫面。策略由 `xapps/voiceguard/voiceguard.py` 執行，透過 Manager、
+狀態機畫面。Rule V1 由 `xapps/voiceguard/voiceguard.py` 執行；Random Forest V2
+由 `xapps/voiceguard_rf/voiceguard_rf.py` 執行，兩者都透過 Manager、
 Prometheus 與 RTP progress 讀取 UE 指標。FlexRIC 這版沒有標準 RC Python binding，
 所以 `voiceguard_rc` 原生 C bridge 負責送出 E2SM-RC Style 2 / Action 6，啟動
-Closed Loop 時會先對三台 UE 發送 `min=0/max=100/dedicated=0` 安全基線並要求 ACK；
+RF Closed Loop 時會先對 10 台 UE 發送 `min=0/max=100/dedicated=0` 安全基線並要求 ACK；
 停止與異常退出也會恢復基線。
 
 實測確認目前 O-CU-DU 的 Action 6 將 Min/Max PRB 解讀為「單次 grant size limit」，
 並不是 UE 總頻寬配額；直接壓低影片 UE 的 Max PRB 會增加小 grant 排程頻率並傷害
 語音 latency。因此 VoiceGuard 的有效保護 actuator 採用動態 Offered Load pacing：
-通話且壅塞連續達門檻時，UE1/UE2 短影片依前端設定比例降載，UE3 保持 100%；
-語音結束、關閉 xApp 或程序退出時自動恢復。狀態 API 分開回報 RC link/ACK、
+RF V2 以 UE1–UE8 作動態短影片、UE9/UE10 作間歇語音，模型從
+`100/85/70/40%` 中選擇影片比例，連續三秒未達 SLA 時安全層只會加強保護；
+語音結束後逐級恢復，關閉 xApp 或程序退出時直接恢復。狀態 API 分開回報 RC link/ACK、
 traffic shaping factor 與目前策略，避免把 RC ACK 誤當成 QoS 改善。
 
 Manager systemd unit 使用 `KillMode=process`，讓只部署／重啟 Web Manager 時不會

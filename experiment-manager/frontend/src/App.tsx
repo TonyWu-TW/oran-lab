@@ -476,6 +476,7 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
   const [trafficError, setTrafficError] = useState('')
   const [voiceGuard, setVoiceGuard] = useState<VoiceGuardStatus | null>(null)
   const [voiceGuardMode, setVoiceGuardMode] = useState<'observe_only' | 'closed_loop'>('closed_loop')
+  const [voiceGuardAlgorithm, setVoiceGuardAlgorithm] = useState<'rules' | 'random_forest'>('random_forest')
   const [voiceGuardPolicy, setVoiceGuardPolicy] = useState({ videoScale: 60, threshold: 1.2 })
   const [radioMetrics, setRadioMetrics] = useState<Record<string, { rx: number; tx: number; latency: number; loss: number }>>({})
   const [throughputHistory, setThroughputHistory] = useState<Record<string, number[]>>({})
@@ -507,15 +508,17 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
           : configured?.type === 'rtp_voice' ? Number(configured.params.bitrate_kbps ?? 0) * 1000 : 0
         return [ue, [...(previous[ue] ?? []), Number(progress.offered_bps ?? (job ? fallback : 0))].slice(-40)]
       })))
-      const voiceJob = nextJobs.find(item => item.ue === 'ue3' && item.traffic_type === 'rtp_voice' && ['QUEUED', 'RUNNING', 'STOP_REQUESTED'].includes(item.status))
-      const voiceProgress = trafficProgress(voiceJob)
+      const voiceJobs = nextJobs.filter(item => ['ue9', 'ue10'].includes(item.ue) && item.traffic_type === 'rtp_voice' && ['QUEUED', 'RUNNING', 'STOP_REQUESTED'].includes(item.status))
+      const voiceProgresses = voiceJobs.map(trafficProgress)
+      const minimum = (key: string, fallback = 0) => voiceProgresses.length ? Math.min(...voiceProgresses.map(item => Number(item[key] ?? fallback))) : fallback
+      const maximum = (keys: string[], fallback = 0) => voiceProgresses.length ? Math.max(...voiceProgresses.map(item => Number(keys.map(key => item[key]).find(value => value != null) ?? fallback))) : fallback
       setVoiceHistory(previous => ({
-        offered: [...previous.offered, Number(voiceProgress.offered_bps ?? (voiceJob ? 64000 : 0))].slice(-40),
-        received: [...previous.received, Number(voiceProgress.received_bps ?? 0)].slice(-40),
-        delivery: [...previous.delivery, Number(voiceProgress.delivery_ratio ?? 0)].slice(-40),
-        loss: [...previous.loss, Number(voiceProgress.loss_percent ?? 0)].slice(-40),
-        jitter: [...previous.jitter, Number(voiceProgress.jitter_rolling_ms ?? voiceProgress.jitter_ms ?? 0)].slice(-40),
-        rtt: [...previous.rtt, Number(voiceProgress.rtt_p95_rolling_ms ?? voiceProgress.rtt_p95_ms ?? 0)].slice(-40),
+        offered: [...previous.offered, voiceProgresses.reduce((total, item) => total + Number(item.offered_bps ?? 0), 0)].slice(-40),
+        received: [...previous.received, voiceProgresses.reduce((total, item) => total + Number(item.received_bps ?? 0), 0)].slice(-40),
+        delivery: [...previous.delivery, minimum('delivery_ratio')].slice(-40),
+        loss: [...previous.loss, maximum(['loss_percent'])].slice(-40),
+        jitter: [...previous.jitter, maximum(['jitter_rolling_ms', 'jitter_ms'])].slice(-40),
+        rtt: [...previous.rtt, maximum(['rtt_p95_rolling_ms', 'rtt_p95_ms'])].slice(-40),
         states: [...previous.states, nextVoiceGuard?.state ?? 'OFF'].slice(-40),
       }))
     } catch { /* run may change during polling */ }
@@ -566,6 +569,7 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
       setVoiceGuard(voiceGuard?.running
         ? await api.stopVoiceGuard(activeRun.id)
         : await api.startVoiceGuard(activeRun.id, voiceGuardMode, {
+            algorithm: voiceGuardAlgorithm,
             video_offered_scale_percent: voiceGuardPolicy.videoScale,
             congestion_threshold_mbps: voiceGuardPolicy.threshold,
           }))
@@ -576,7 +580,7 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
   return <div className="content">
     <section className="run-header"><div><div className="hero-kicker"><Activity size={14} /> LIVE EXPERIMENT</div><h2>{run ? `Run ${run.id.slice(0, 8)}` : '目前沒有執行紀錄'}</h2><p>{run ? `開始時間 ${uptime} · revision ${run.experiment_revision}` : '請從實驗設定頁選擇 baseline 並啟動。'}</p></div><div className="run-actions"><span className={`run-state ${run?.state?.toLowerCase()}`}>{run?.state ?? 'IDLE'}</span>{activeRun && <button className="danger" disabled={!!busy} onClick={onStop}><CircleStop />停止實驗</button>}</div></section>
     <section className="metric-grid"><Metric label="Radio Stack" value={platform?.state ?? '—'} hint={`${Object.values(platform?.components ?? {}).filter(item => item.running).length} components`} icon={<Radio />} /><Metric label="UE Attached" value={`${configuredUEs.filter(item => platform?.components[item.ue]?.running).length} / ${configuredUEs.length || 0}`} hint="PDU sessions" icon={<Wifi />} /><Metric label="ZMQ Endpoints" value={`${Object.values(platform?.ports ?? {}).filter(Boolean).length} / ${2 + configuredUEs.length * 2}`} hint={`gNB 2 + ${configuredUEs.length} UE × 2`} icon={<Network />} /><Metric label="Monitoring" value={platform?.prometheus ? 'ONLINE' : 'OFFLINE'} hint="Prometheus :9095" icon={<Activity />} /></section>
-    <VoiceGuardPanel status={voiceGuard} activeRun={!!activeRun} busy={trafficBusy === 'voiceguard'} mode={voiceGuardMode} policy={voiceGuardPolicy} onMode={setVoiceGuardMode} onPolicy={setVoiceGuardPolicy} onToggle={() => void toggleVoiceGuard()} />
+    <VoiceGuardPanel status={voiceGuard} activeRun={!!activeRun} busy={trafficBusy === 'voiceguard'} mode={voiceGuardMode} algorithm={voiceGuardAlgorithm} policy={voiceGuardPolicy} onMode={setVoiceGuardMode} onAlgorithm={setVoiceGuardAlgorithm} onToggle={() => void toggleVoiceGuard()} />
     <section className="panel traffic-panel"><div className="panel-head"><div><h3>UE Traffic Controller</h3><p>流量設定來自這次 Run 的 Experiment snapshot；可單獨執行或同時啟動全部 UE</p></div><div className="traffic-batch-actions"><button className="secondary small" disabled={!activeRun || !activeJobs.length || !!trafficBusy} onClick={() => void stopTraffic('all')}><CircleStop />停止全部</button><button className="primary small" disabled={!activeRun || !!trafficBusy || activeTrafficUEs.size > 0} onClick={() => void startTraffic('all')}><Zap />{trafficBusy === 'all' ? '啟動中…' : '執行全部'}</button></div></div>
       <TrafficPlanTable configuredUEs={configuredUEs} jobs={jobs} activeRun={!!activeRun} busy={trafficBusy} onStart={ue => void startTraffic(ue)} onStop={ue => void stopTraffic(ue)} />
       {trafficError && <div className="traffic-error">{trafficError}</div>}
@@ -584,18 +588,19 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
       <TrafficTable jobs={jobs} />
     </section>
     <section className="panel chart-panel"><div className="panel-head"><div><h3>Offered Load vs Delivered Throughput</h3><p>虛線是流量產生器需求量；實線是 Prometheus 實際 RX + TX，兩者分開才能看出資源競爭</p></div><div className="config-shortcuts">{configuredUEs.map(item => item.ue).map(ue => <button key={ue} onClick={() => onViewConfig(run, ue)}><FileText />{ue.toUpperCase()} Config</button>)}<a href={`${window.location.protocol}//${window.location.hostname}:3001`} target="_blank">Grafana <ChevronRight size={14} /></a></div></div><ThroughputChart ues={configuredUEs.map(item => item.ue)} history={throughputHistory} offeredHistory={offeredHistory} metrics={radioMetrics} /></section>
-    <section className="panel voice-quality-panel"><div className="panel-head"><div><h3>UE3 Voice Quality</h3><p>RTP-like 最近 3 秒 rolling · Offered/Received、loss、jitter 與 RTT P95</p></div><span className={`xapp-state ${voiceGuard?.state?.toLowerCase() ?? 'off'}`}>{voiceGuard?.state ?? 'XAPP OFF'}</span></div><VoiceQualityChart history={voiceHistory} voiceGuard={voiceGuard} /></section>
+    <section className="panel voice-quality-panel"><div className="panel-head"><div><h3>UE9 / UE10 Voice Quality</h3><p>取目前通話 UE 的最差值 · RTP-like 最近 3 秒 rolling</p></div><span className={`xapp-state ${voiceGuard?.state?.toLowerCase() ?? 'off'}`}>{voiceGuard?.state ?? 'XAPP OFF'}</span></div><VoiceQualityChart history={voiceHistory} voiceGuard={voiceGuard} /></section>
   </div>
 }
 
-function VoiceGuardPanel({ status, activeRun, busy, mode, policy, onMode, onPolicy, onToggle }: {
+function VoiceGuardPanel({ status, activeRun, busy, mode, algorithm, policy, onMode, onAlgorithm, onToggle }: {
   status: VoiceGuardStatus | null
   activeRun: boolean
   busy: boolean
   mode: 'observe_only' | 'closed_loop'
+  algorithm: 'rules' | 'random_forest'
   policy: { videoScale: number; threshold: number }
   onMode: (mode: 'observe_only' | 'closed_loop') => void
-  onPolicy: (policy: { videoScale: number; threshold: number }) => void
+  onAlgorithm: (algorithm: 'rules' | 'random_forest') => void
   onToggle: () => void
 }) {
   const running = !!status?.running
@@ -604,20 +609,20 @@ function VoiceGuardPanel({ status, activeRun, busy, mode, policy, onMode, onPoli
   const lastEvent = status?.events?.at(-1)
   return <section className={`panel voiceguard-panel ${status?.state?.toLowerCase() ?? 'off'}`}>
     <div className="panel-head">
-      <div><div className="xapp-title"><ShieldCheck /><span>PYTHON POLICY + NATIVE E2SM-RC</span></div><h3>VoiceGuard</h3><p>Prometheus / RTP 品質判斷 · FlexRIC 原生橋接送出 UE-level PRB Control</p></div>
+      <div><div className="xapp-title"><ShieldCheck /><span>RANDOM FOREST XAPP + NATIVE E2SM-RC</span></div><h3>VoiceGuard RF V2</h3><p>8 台動態影片＋UE9/UE10 隨機通話 · RF 選擇最少必要的保護比例</p></div>
       <div className="voiceguard-actions"><span className={`xapp-state ${status?.state?.toLowerCase() ?? 'off'}`}>{status?.state ?? 'OFF'}</span><button className={running ? 'danger small' : 'primary small'} disabled={!activeRun || busy} onClick={onToggle}>{running ? <CircleStop /> : <Play />}{busy ? '處理中…' : running ? '關閉並恢復基線' : '啟動 xApp'}</button></div>
     </div>
     <div className="voiceguard-config">
       <label><span>執行模式</span><select value={running ? status?.mode ?? mode : mode} disabled={running || busy} onChange={event => onMode(event.target.value as 'observe_only' | 'closed_loop')}><option value="closed_loop">Closed Loop（實際控制）</option><option value="observe_only">Observe Only（只觀察）</option></select></label>
-      <label><span>保護時影片 Offered</span><div><CommitNumberInput value={policy.videoScale} min={10} max={100} step={1} integer disabled={running || busy} onCommit={videoScale => onPolicy({ ...policy, videoScale })} /><b>%</b></div></label>
-      <label><span>壅塞門檻</span><div><CommitNumberInput value={policy.threshold} min={0.1} max={100} step={0.1} disabled={running || busy} onCommit={threshold => onPolicy({ ...policy, threshold })} /><b>Mbps</b></div></label>
+      <label><span>策略引擎</span><select value={running ? status?.algorithm ?? algorithm : algorithm} disabled={running || busy} onChange={event => onAlgorithm(event.target.value as 'rules' | 'random_forest')}><option value="random_forest">Random Forest V2</option><option value="rules">Rule V1（3 UE 舊版）</option></select></label>
+      <div className="rc-link online"><span>RF Model</span><b>{status?.model_name ?? (algorithm === 'random_forest' ? 'voiceguard_rf.joblib' : `Rule · ${policy.videoScale}%`)}</b></div>
       <div className={`rc-link ${status?.e2_connected ? 'online' : ''}`}><span>RC Link</span><b>{status?.e2_connected ? 'ACK / CONNECTED' : running && status?.mode === 'closed_loop' ? 'CONNECTING' : 'STANDBY'}</b></div>
     </div>
     <div className="voiceguard-grid">
       <div><span>模式</span><b>{(status?.mode ?? mode).replace('_', ' ').toUpperCase()}</b><small>{status?.native_control ? 'E2SM-RC safety baseline verified' : 'No RAN control commands'}</small></div>
-      <div><span>UE3 通話</span><b>{status?.voice_active ? 'ACTIVE' : 'WAITING'}</b><small>{status?.voice_active ? 'RTP-like traffic detected' : '啟動 UE3 語音後開始判斷'}</small></div>
-      <div><span>影片 Offered</span><b>{videoOffered.toFixed(2)} Mbps</b><small>UE1 + UE2 demand</small></div>
-      <div><span>影片 Delivered</span><b>{videoDelivered.toFixed(2)} Mbps</b><small>UE1 + UE2 measured</small></div>
+      <div><span>語音通話</span><b>{status?.voice_active ? 'ACTIVE' : 'WAITING'}</b><small>{status?.active_voice_ues?.map(ue => ue.toUpperCase()).join(' + ') || '等待 UE9 / UE10 來電'}</small></div>
+      <div><span>影片 Offered</span><b>{videoOffered.toFixed(2)} Mbps</b><small>UE1–UE8 demand</small></div>
+      <div><span>RF 信心／延遲</span><b>{status?.prediction_confidence != null ? `${(status.prediction_confidence * 100).toFixed(1)}%` : '—'}</b><small>{status?.inference_ms != null ? `${status.inference_ms.toFixed(2)} ms · ${status.predicted_policy ?? ''}` : `${videoDelivered.toFixed(2)} Mbps delivered`}</small></div>
     </div>
     <div className="voiceguard-decision"><i /><div><span>目前決策</span><b>{status?.last_decision ?? '尚未啟動 VoiceGuard'}</b><small>{status?.current_policy ?? (lastEvent ? `${new Date(lastEvent.timestamp * 1000).toLocaleTimeString()} · ${lastEvent.message}` : '安全預設：BASELINE')}</small></div></div>
   </section>
@@ -664,14 +669,14 @@ function VoiceQualityChart({ history, voiceGuard }: { history: VoiceHistory; voi
   const jitter = history.jitter.at(-1) ?? 0
   const rtt = history.rtt.at(-1) ?? 0
   const rollingDelivery = history.delivery.at(-1) ?? 0
-  const stable = offered > 0 && rollingDelivery >= 0.95 && loss <= 2 && jitter <= 30 && rtt <= 80
+  const stable = offered > 0 && rollingDelivery >= 0.95 && loss <= 2 && jitter <= 30 && rtt <= 120
   const qualityReason = stable
     ? '最近 3 秒皆在門檻內'
     : [
         rollingDelivery < 0.95 ? `delivery ${(rollingDelivery * 100).toFixed(1)}%` : '',
         loss > 2 ? `loss ${loss.toFixed(1)}%` : '',
         jitter > 30 ? `jitter ${jitter.toFixed(1)} ms` : '',
-        rtt > 80 ? `RTT spike ${rtt.toFixed(1)} ms` : '',
+        rtt > 120 ? `RTT spike ${rtt.toFixed(1)} ms` : '',
       ].filter(Boolean).join(' · ')
   const rateMaximum = Math.max(80000, ...history.offered, ...history.received)
   const points = (values: number[], maximum: number, height = 46) => values.map((value, index) => `${(index / 39) * 100},${50 - Math.min(1, value / Math.max(1, maximum)) * height}`).join(' ')
@@ -679,7 +684,7 @@ function VoiceQualityChart({ history, voiceGuard }: { history: VoiceHistory; voi
   const qualitySeries = [
     { label: 'Loss', value: loss, unit: '%', values: history.loss, maximum: Math.max(5, ...history.loss), color: '#ff8077' },
     { label: 'Jitter', value: jitter, unit: 'ms', values: history.jitter, maximum: Math.max(30, ...history.jitter), color: '#69a7ff' },
-    { label: 'RTT P95', value: rtt, unit: 'ms', values: history.rtt, maximum: Math.max(80, ...history.rtt), color: '#edc46b' },
+    { label: 'RTT P95', value: rtt, unit: 'ms', values: history.rtt, maximum: Math.max(120, ...history.rtt), color: '#edc46b' },
   ]
   return <div className="voice-quality">
     <div className="voice-kpis">
@@ -688,7 +693,7 @@ function VoiceQualityChart({ history, voiceGuard }: { history: VoiceHistory; voi
       <div><span>Received</span><b>{(received / 1000).toFixed(1)} Kbps</b><small>{(rollingDelivery * 100).toFixed(1)}% delivery · 3s</small></div>
       <div><span>Loss</span><b>{loss.toFixed(1)}%</b><small>目標 ≤ 2%</small></div>
       <div><span>Jitter</span><b>{jitter.toFixed(1)} ms</b><small>目標 ≤ 30 ms</small></div>
-      <div><span>RTT P95</span><b>{rtt.toFixed(1)} ms</b><small>目標 ≤ 80 ms</small></div>
+      <div><span>RTT P95</span><b>{rtt.toFixed(1)} ms</b><small>10 UE 目標 ≤ 120 ms</small></div>
     </div>
     <div className="voice-rate-chart"><div className="voice-chart-label"><span><i className="offered-line" />Offered</span><span><i className="received-line" />Received</span></div><svg viewBox="0 0 100 52" preserveAspectRatio="none"><rect width="100" height="52" fill="url(#grid)" />{transitions.map(index => <line key={index} x1={(index / 39) * 100} x2={(index / 39) * 100} y1="0" y2="52" stroke="#edc46b" strokeDasharray="1 1" strokeWidth=".35" vectorEffect="non-scaling-stroke" />)}<polyline points={points(history.offered, rateMaximum)} fill="none" stroke="#edc46b" strokeOpacity=".7" strokeDasharray="2 1.5" strokeWidth=".55" vectorEffect="non-scaling-stroke" /><polyline points={points(history.received, rateMaximum)} fill="none" stroke="#60e3a4" strokeWidth=".75" vectorEffect="non-scaling-stroke" /></svg></div>
     <div className="voice-quality-series">{qualitySeries.map(series => <div key={series.label}><div><span>{series.label}</span><b>{series.value.toFixed(1)} {series.unit}</b></div><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points={points(series.values, series.maximum, 24)} fill="none" stroke={series.color} strokeWidth=".7" vectorEffect="non-scaling-stroke" /></svg></div>)}</div>

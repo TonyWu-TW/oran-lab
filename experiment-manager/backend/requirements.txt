@@ -4,3 +4,5 @@ SQLAlchemy==2.0.41
 httpx==0.28.1
 pytest==8.4.1
 PyYAML==6.0.3
+joblib==1.5.1
+scikit-learn==1.7.1

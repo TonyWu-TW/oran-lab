@@ -36,7 +36,7 @@ export const api = {
   startVoiceGuard: (
     runId: string,
     mode: 'observe_only' | 'closed_loop' = 'closed_loop',
-    config: Record<string, number | string> = {},
+    config: Record<string, number | string | null> = {},
   ) => request<VoiceGuardStatus>(`/api/runs/${runId}/xapps/voiceguard/start`, {
     method: 'POST',
     body: JSON.stringify({ mode, config }),

@@ -1,0 +1,104 @@
+{
+  "trained_at": 1785386044.58143,
+  "dataset": "xapps/voiceguard_rf/dataset/training.csv",
+  "model": "xapps/voiceguard_rf/models/voiceguard_rf.joblib",
+  "rows": 54,
+  "scenarios": 9,
+  "class_distribution": {
+    "LIGHT_85": 30,
+    "EQUAL_100": 18,
+    "MEDIUM_70": 6
+  },
+  "group_cross_validation_folds": 5,
+  "group_cross_validation_accuracy": 0.5555555555555556,
+  "confusion_matrix_labels": [
+    "EQUAL_100",
+    "LIGHT_85",
+    "MEDIUM_70"
+  ],
+  "confusion_matrix": [
+    [
+      10,
+      4,
+      4
+    ],
+    [
+      6,
+      20,
+      4
+    ],
+    [
+      0,
+      6,
+      0
+    ]
+  ],
+  "classification_report": {
+    "EQUAL_100": {
+      "precision": 0.625,
+      "recall": 0.5555555555555556,
+      "f1-score": 0.5882352941176471,
+      "support": 18.0
+    },
+    "LIGHT_85": {
+      "precision": 0.6666666666666666,
+      "recall": 0.6666666666666666,
+      "f1-score": 0.6666666666666666,
+      "support": 30.0
+    },
+    "MEDIUM_70": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 6.0
+    },
+    "accuracy": 0.5555555555555556,
+    "macro avg": {
+      "precision": 0.4305555555555555,
+      "recall": 0.40740740740740744,
+      "f1-score": 0.41830065359477125,
+      "support": 54.0
+    },
+    "weighted avg": {
+      "precision": 0.5787037037037037,
+      "recall": 0.5555555555555556,
+      "f1-score": 0.5664488017429193,
+      "support": 54.0
+    }
+  },
+  "feature_importance": {
+    "voice_rtt_p95_ms": 0.3910809414561393,
+    "video_delivered_mbps": 0.3420046398725846,
+    "active_voice_count": 0.11872610106030067,
+    "voice_delivery_ratio": 0.03378328260504083,
+    "video_offered_mbps": 0.030701096963008587,
+    "video_base_demand_mbps": 0.02980447172296362,
+    "voice_jitter_ms": 0.023099622079881855,
+    "voice_loss_percent": 0.01804689103298551,
+    "ue10_active": 0.008426581505063454,
+    "ue9_active": 0.002226884368392605,
+    "video_delivery_ratio": 0.002099487333638903,
+    "video_ue_count": 0.0
+  },
+  "parameters": {
+    "bootstrap": true,
+    "ccp_alpha": 0.0,
+    "class_weight": "balanced_subsample",
+    "criterion": "gini",
+    "max_depth": 2,
+    "max_features": null,
+    "max_leaf_nodes": null,
+    "max_samples": null,
+    "min_impurity_decrease": 0.0,
+    "min_samples_leaf": 2,
+    "min_samples_split": 2,
+    "min_weight_fraction_leaf": 0.0,
+    "monotonic_cst": null,
+    "n_estimators": 300,
+    "n_jobs": -1,
+    "oob_score": false,
+    "random_state": 20260729,
+    "verbose": 0,
+    "warm_start": false
+  }
+}

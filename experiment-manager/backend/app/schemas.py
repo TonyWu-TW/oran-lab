@@ -176,13 +176,17 @@ class ConfigUpdate(BaseModel):
 
 
 class VoiceGuardConfig(BaseModel):
+    algorithm: str = Field(default="random_forest", pattern=r"^(rules|random_forest)$")
+    model_path: str | None = Field(default=None, max_length=1024)
     sample_interval_seconds: float = Field(default=1.0, ge=0.5, le=10.0)
     congestion_threshold_mbps: float = Field(default=1.2, ge=0.01, le=100.0)
     voice_loss_threshold_percent: float = Field(default=2.0, ge=0.0, le=100.0)
-    voice_latency_threshold_ms: float = Field(default=80.0, ge=1.0, le=5000.0)
+    voice_latency_threshold_ms: float = Field(default=120.0, ge=1.0, le=5000.0)
     voice_jitter_threshold_ms: float = Field(default=30.0, ge=0.0, le=5000.0)
     consecutive_samples: int = Field(default=3, ge=1, le=30)
+    recovery_samples: int = Field(default=5, ge=1, le=60)
     cooldown_seconds: int = Field(default=5, ge=1, le=300)
+    restore_step_seconds: float = Field(default=3.0, ge=1.0, le=60.0)
     video_offered_scale_percent: int = Field(default=60, ge=10, le=100)
     video_max_prb_percent: int = Field(default=100, ge=1, le=100)
     voice_min_prb_percent: int = Field(default=0, ge=0, le=100)

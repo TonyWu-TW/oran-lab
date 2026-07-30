@@ -180,6 +180,10 @@ ALLOWED_METRICS = {
 }
 TRAFFIC_HELPER = LAB_ROOT / "scripts" / "oranlab-traffic.py"
 VOICEGUARD_SCRIPT = LAB_ROOT / "xapps" / "voiceguard" / "voiceguard.py"
+VOICEGUARD_RF_SCRIPT = LAB_ROOT / "xapps" / "voiceguard_rf" / "voiceguard_rf.py"
+VOICEGUARD_RF_MODEL = (
+    LAB_ROOT / "xapps" / "voiceguard_rf" / "models" / "voiceguard_rf.joblib"
+)
 VOICEGUARD_RC_BRIDGE = (
     LAB_ROOT / "src" / "flexric" / "build" / "examples" / "xApp" / "c"
     / "voiceguard_rc" / "voiceguard_rc"
@@ -1107,7 +1111,10 @@ def is_voiceguard_pid(pid: int, run_id: str) -> bool:
         command = Path(f"/proc/{pid}/cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
     except OSError:
         return False
-    return str(VOICEGUARD_SCRIPT) in command and run_id in command
+    return (
+        any(str(script) in command for script in (VOICEGUARD_SCRIPT, VOICEGUARD_RF_SCRIPT))
+        and run_id in command
+    )
 
 
 def read_voiceguard_state(run_id: str) -> dict[str, Any]:
@@ -1168,11 +1175,28 @@ def start_voiceguard(
         raise HTTPException(404, "run not found")
     if run.state != "RUNNING":
         raise HTTPException(409, "VoiceGuard requires a RUNNING experiment")
-    if not VOICEGUARD_SCRIPT.exists():
-        raise HTTPException(500, f"VoiceGuard script not found: {VOICEGUARD_SCRIPT}")
+    script = (
+        VOICEGUARD_RF_SCRIPT
+        if payload.config.algorithm == "random_forest"
+        else VOICEGUARD_SCRIPT
+    )
+    if not script.exists():
+        raise HTTPException(500, f"VoiceGuard script not found: {script}")
     if payload.mode == "closed_loop" and not os.access(VOICEGUARD_RC_BRIDGE, os.X_OK):
         raise HTTPException(503, f"VoiceGuard RC bridge is not executable: {VOICEGUARD_RC_BRIDGE}")
     config = payload.config.model_dump()
+    if payload.config.algorithm == "random_forest":
+        model = Path(payload.config.model_path or VOICEGUARD_RF_MODEL).resolve()
+        try:
+            model.relative_to(LAB_ROOT.resolve())
+        except ValueError as exc:
+            raise HTTPException(422, "VoiceGuard model must be inside the lab workspace") from exc
+        if not model.is_file():
+            raise HTTPException(
+                503,
+                f"Random Forest model not found: {model}; run the RF collector and trainer first",
+            )
+        config["model_path"] = str(model)
     config["traffic_control_file"] = str(
         VOICEGUARD_ROOT / f"{run_id}.traffic-control.json"
     )
@@ -1190,7 +1214,7 @@ def start_voiceguard(
         state_path = voiceguard_state_path(run_id)
         command = [
             sys.executable,
-            str(VOICEGUARD_SCRIPT),
+            str(script),
             "--run-id", run_id,
             "--manager-url", MANAGER_SELF_URL,
             "--state-file", str(state_path),
@@ -1208,7 +1232,8 @@ def start_voiceguard(
     add_event(
         database, run_id, "voiceguard_started",
         f"VoiceGuard xApp 已用 {payload.mode} 模式啟動",
-        component="voiceguard", mode=payload.mode, pid=process.pid,
+        component="voiceguard", mode=payload.mode,
+        algorithm=payload.config.algorithm, pid=process.pid,
     )
     database.commit()
     return {
@@ -1216,6 +1241,7 @@ def start_voiceguard(
         "running": True,
         "state": "STARTING",
         "mode": payload.mode,
+        "algorithm": payload.config.algorithm,
         "pid": process.pid,
         "native_control": payload.mode == "closed_loop",
     }
@@ -1238,7 +1264,7 @@ def stop_voiceguard(run_id: str, database: Session = Depends(get_db)):
         pass
     add_event(
         database, run_id, "voiceguard_stop_requested",
-        "正在停止 VoiceGuard；Closed Loop 會先恢復 UE1/UE2/UE3 基線 PRB policy",
+        "正在停止 VoiceGuard；Closed Loop 會恢復 10 UE 流量與 RC 安全基線",
         component="voiceguard",
     )
     database.commit()

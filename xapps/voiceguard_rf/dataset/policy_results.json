@@ -1,0 +1,554 @@
+{
+  "run_id": "a0eb8093-213e-410d-a53d-d2a455e21ef5",
+  "created_at": 1785385653.4508505,
+  "source_raw_samples": "xapps/voiceguard_rf/dataset/raw_samples.csv",
+  "method": "relabel all measured candidate policy windows with the shared SLA",
+  "sla": {
+    "delivery_ratio_min": 0.95,
+    "loss_percent_max": 2.0,
+    "jitter_ms_max": 30.0,
+    "rtt_p95_ms_max": 120.0
+  },
+  "policy_scales": {
+    "EQUAL_100": 1.0,
+    "LIGHT_85": 0.85,
+    "MEDIUM_70": 0.7,
+    "STRONG_40": 0.4
+  },
+  "scenarios": [
+    {
+      "scenario_id": "round-1-ue10-1785385254",
+      "active_voice_ues": [
+        "ue10"
+      ],
+      "label": "LIGHT_85",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 6,
+          "sla_success_ratio": 0.5,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.954367036980775,
+          "voice_rtt_p95_ms_median": 106.2120785,
+          "video_delivered_mbps_median": 8.057384117563089
+        },
+        "LIGHT_85": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 13.538862040590242,
+          "voice_rtt_p95_ms_median": 90.18699649999999,
+          "video_delivered_mbps_median": 7.67405028388312
+        },
+        "MEDIUM_70": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.961091333392595,
+          "voice_rtt_p95_ms_median": 90.675433,
+          "video_delivered_mbps_median": 6.013790915931109
+        },
+        "STRONG_40": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.510026823355707,
+          "voice_rtt_p95_ms_median": 56.6870555,
+          "video_delivered_mbps_median": 3.4392995695061024
+        }
+      },
+      "baseline_features": {
+        "video_ue_count": 8.0,
+        "active_voice_count": 1.0,
+        "video_base_demand_mbps": 7.76365128144238,
+        "video_offered_mbps": 7.76365128144238,
+        "video_delivered_mbps": 8.057384117563089,
+        "video_delivery_ratio": 1.0,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.954367036980775,
+        "voice_rtt_p95_ms": 106.2120785,
+        "ue9_active": 0.0,
+        "ue10_active": 1.0
+      }
+    },
+    {
+      "scenario_id": "round-1-ue9-1785385213",
+      "active_voice_ues": [
+        "ue9"
+      ],
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.11008620997763,
+          "voice_rtt_p95_ms_median": 78.615427,
+          "video_delivered_mbps_median": 7.863790964568232
+        },
+        "LIGHT_85": {
+          "samples": 6,
+          "sla_success_ratio": 0.8333333333333334,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.41720496599099,
+          "voice_rtt_p95_ms_median": 78.563488,
+          "video_delivered_mbps_median": 7.438806966392572
+        },
+        "MEDIUM_70": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 13.677289037747746,
+          "voice_rtt_p95_ms_median": 84.6477305,
+          "video_delivered_mbps_median": 5.835378410961309
+        },
+        "STRONG_40": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.755329519821036,
+          "voice_rtt_p95_ms_median": 53.52376,
+          "video_delivered_mbps_median": 3.3322157942097492
+        }
+      },
+      "baseline_features": {
+        "video_ue_count": 8.0,
+        "active_voice_count": 1.0,
+        "video_base_demand_mbps": 7.319843507710756,
+        "video_offered_mbps": 7.319843507710756,
+        "video_delivered_mbps": 7.863790964568232,
+        "video_delivery_ratio": 1.0,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.11008620997763,
+        "voice_rtt_p95_ms": 78.615427,
+        "ue9_active": 1.0,
+        "ue10_active": 0.0
+      }
+    },
+    {
+      "scenario_id": "round-1-ue9-ue10-1785385295",
+      "active_voice_ues": [
+        "ue9",
+        "ue10"
+      ],
+      "label": "LIGHT_85",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 6,
+          "sla_success_ratio": 0.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 15.549279356362984,
+          "voice_rtt_p95_ms_median": 153.3195005,
+          "video_delivered_mbps_median": 9.106007958087723
+        },
+        "LIGHT_85": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 14.929602362636118,
+          "voice_rtt_p95_ms_median": 115.7491,
+          "video_delivered_mbps_median": 7.028529452648955
+        },
+        "MEDIUM_70": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 14.025453314241062,
+          "voice_rtt_p95_ms_median": 101.522942,
+          "video_delivered_mbps_median": 6.14786856338374
+        },
+        "STRONG_40": {
+          "samples": 6,
+          "sla_success_ratio": 0.8333333333333334,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.485748188282237,
+          "voice_rtt_p95_ms_median": 71.618851,
+          "video_delivered_mbps_median": 3.3879118540804405
+        }
+      },
+      "baseline_features": {
+        "video_ue_count": 8.0,
+        "active_voice_count": 2.0,
+        "video_base_demand_mbps": 8.68570119841593,
+        "video_offered_mbps": 8.68570119841593,
+        "video_delivered_mbps": 9.106007958087723,
+        "video_delivery_ratio": 1.0,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 15.549279356362984,
+        "voice_rtt_p95_ms": 153.3195005,
+        "ue9_active": 1.0,
+        "ue10_active": 1.0
+      }
+    },
+    {
+      "scenario_id": "round-2-ue10-1785385377",
+      "active_voice_ues": [
+        "ue10"
+      ],
+      "label": "LIGHT_85",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 6,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.684479416107381,
+          "voice_rtt_p95_ms_median": 99.50523899999999,
+          "video_delivered_mbps_median": 8.939961254998853
+        },
+        "LIGHT_85": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.502226060810813,
+          "voice_rtt_p95_ms_median": 64.563654,
+          "video_delivered_mbps_median": 6.515598300649833
+        },
+        "MEDIUM_70": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 13.398773425306121,
+          "voice_rtt_p95_ms_median": 70.5474925,
+          "video_delivered_mbps_median": 6.372560781834832
+        },
+        "STRONG_40": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.742644621140943,
+          "voice_rtt_p95_ms_median": 49.367121,
+          "video_delivered_mbps_median": 3.2172910700946695
+        }
+      },
+      "baseline_features": {
+        "video_ue_count": 8.0,
+        "active_voice_count": 1.0,
+        "video_base_demand_mbps": 8.615337648480638,
+        "video_offered_mbps": 8.615337648480638,
+        "video_delivered_mbps": 8.939961254998853,
+        "video_delivery_ratio": 1.0,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.684479416107381,
+        "voice_rtt_p95_ms": 99.50523899999999,
+        "ue9_active": 0.0,
+        "ue10_active": 1.0
+      }
+    },
+    {
+      "scenario_id": "round-2-ue9-1785385336",
+      "active_voice_ues": [
+        "ue9"
+      ],
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.801596771633111,
+          "voice_rtt_p95_ms_median": 77.892305,
+          "video_delivered_mbps_median": 8.081901167051317
+        },
+        "LIGHT_85": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.173818013668903,
+          "voice_rtt_p95_ms_median": 72.6242625,
+          "video_delivered_mbps_median": 7.3337442014714425
+        },
+        "MEDIUM_70": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.540901974317666,
+          "voice_rtt_p95_ms_median": 72.9123925,
+          "video_delivered_mbps_median": 6.480437896187054
+        },
+        "STRONG_40": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.045523539792311,
+          "voice_rtt_p95_ms_median": 46.4363305,
+          "video_delivered_mbps_median": 3.2786939944340143
+        }
+      },
+      "baseline_features": {
+        "video_ue_count": 8.0,
+        "active_voice_count": 1.0,
+        "video_base_demand_mbps": 8.201693153903195,
+        "video_offered_mbps": 8.201693153903195,
+        "video_delivered_mbps": 8.081901167051317,
+        "video_delivery_ratio": 1.0,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.801596771633111,
+        "voice_rtt_p95_ms": 77.892305,
+        "ue9_active": 1.0,
+        "ue10_active": 0.0
+      }
+    },
+    {
+      "scenario_id": "round-2-ue9-ue10-1785385418",
+      "active_voice_ues": [
+        "ue9",
+        "ue10"
+      ],
+      "label": "LIGHT_85",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 6,
+          "sla_success_ratio": 0.5,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 14.139393453693696,
+          "voice_rtt_p95_ms_median": 116.24372600000001,
+          "video_delivered_mbps_median": 9.298279750901584
+        },
+        "LIGHT_85": {
+          "samples": 6,
+          "sla_success_ratio": 0.8333333333333334,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 13.85067157761261,
+          "voice_rtt_p95_ms_median": 103.7149565,
+          "video_delivered_mbps_median": 7.167447298205491
+        },
+        "MEDIUM_70": {
+          "samples": 6,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 14.485093171140942,
+          "voice_rtt_p95_ms_median": 136.4521975,
+          "video_delivered_mbps_median": 5.869209171750729
+        },
+        "STRONG_40": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 14.112882588291313,
+          "voice_rtt_p95_ms_median": 99.288491,
+          "video_delivered_mbps_median": 3.525649899052047
+        }
+      },
+      "baseline_features": {
+        "video_ue_count": 8.0,
+        "active_voice_count": 2.0,
+        "video_base_demand_mbps": 8.515113733012933,
+        "video_offered_mbps": 8.515113733012933,
+        "video_delivered_mbps": 9.298279750901584,
+        "video_delivery_ratio": 1.0,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 14.139393453693696,
+        "voice_rtt_p95_ms": 116.24372600000001,
+        "ue9_active": 1.0,
+        "ue10_active": 1.0
+      }
+    },
+    {
+      "scenario_id": "round-3-ue10-1785385500",
+      "active_voice_ues": [
+        "ue10"
+      ],
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 0.9966666666666666,
+          "voice_loss_percent_median": 0.3333333333333333,
+          "voice_jitter_ms_median": 12.527003157398532,
+          "voice_rtt_p95_ms_median": 65.9735995,
+          "video_delivered_mbps_median": 7.98412825974234
+        },
+        "LIGHT_85": {
+          "samples": 6,
+          "sla_success_ratio": 0.8333333333333334,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.532647260306804,
+          "voice_rtt_p95_ms_median": 82.09930449999999,
+          "video_delivered_mbps_median": 7.159219570369682
+        },
+        "MEDIUM_70": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.02482584606264,
+          "voice_rtt_p95_ms_median": 53.879385,
+          "video_delivered_mbps_median": 5.8079074430495226
+        },
+        "STRONG_40": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.44580948144144,
+          "voice_rtt_p95_ms_median": 49.6326045,
+          "video_delivered_mbps_median": 3.525242158656262
+        }
+      },
+      "baseline_features": {
+        "video_ue_count": 8.0,
+        "active_voice_count": 1.0,
+        "video_base_demand_mbps": 7.659231275372301,
+        "video_offered_mbps": 7.659231275372301,
+        "video_delivered_mbps": 7.98412825974234,
+        "video_delivery_ratio": 1.0,
+        "voice_delivery_ratio": 0.9966666666666666,
+        "voice_loss_percent": 0.3333333333333333,
+        "voice_jitter_ms": 12.527003157398532,
+        "voice_rtt_p95_ms": 65.9735995,
+        "ue9_active": 0.0,
+        "ue10_active": 1.0
+      }
+    },
+    {
+      "scenario_id": "round-3-ue9-1785385459",
+      "active_voice_ues": [
+        "ue9"
+      ],
+      "label": "LIGHT_85",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 6,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.921411558322145,
+          "voice_rtt_p95_ms_median": 103.967608,
+          "video_delivered_mbps_median": 8.672448438898233
+        },
+        "LIGHT_85": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.869659828859056,
+          "voice_rtt_p95_ms_median": 65.8575065,
+          "video_delivered_mbps_median": 6.9101657053159915
+        },
+        "MEDIUM_70": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.149309956285144,
+          "voice_rtt_p95_ms_median": 80.52916400000001,
+          "video_delivered_mbps_median": 6.573713865564456
+        },
+        "STRONG_40": {
+          "samples": 6,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.362681476957498,
+          "voice_rtt_p95_ms_median": 44.4975035,
+          "video_delivered_mbps_median": 3.25083859965357
+        }
+      },
+      "baseline_features": {
+        "video_ue_count": 8.0,
+        "active_voice_count": 1.0,
+        "video_base_demand_mbps": 8.570977379144166,
+        "video_offered_mbps": 8.570977379144166,
+        "video_delivered_mbps": 8.672448438898233,
+        "video_delivery_ratio": 1.0,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.921411558322145,
+        "voice_rtt_p95_ms": 103.967608,
+        "ue9_active": 1.0,
+        "ue10_active": 0.0
+      }
+    },
+    {
+      "scenario_id": "round-3-ue9-ue10-1785385541",
+      "active_voice_ues": [
+        "ue9",
+        "ue10"
+      ],
+      "label": "MEDIUM_70",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 6,
+          "sla_success_ratio": 0.5,
+          "voice_delivery_ratio_median": 0.9900220750551876,
+          "voice_loss_percent_median": 0.9977924944812362,
+          "voice_jitter_ms_median": 13.796557965561224,
+          "voice_rtt_p95_ms_median": 125.26585899999999,
+          "video_delivered_mbps_median": 7.870815424966738
+        },
+        "LIGHT_85": {
+          "samples": 6,
+          "sla_success_ratio": 0.16666666666666666,
+          "voice_delivery_ratio_median": 0.9966666666666666,
+          "voice_loss_percent_median": 0.3333333333333333,
+          "voice_jitter_ms_median": 14.659455549342109,
+          "voice_rtt_p95_ms_median": 140.181034,
+          "video_delivered_mbps_median": 7.616936381576559
+        },
+        "MEDIUM_70": {
+          "samples": 6,
+          "sla_success_ratio": 0.8333333333333334,
+          "voice_delivery_ratio_median": 0.9933333333333334,
+          "voice_loss_percent_median": 0.6666666666666666,
+          "voice_jitter_ms_median": 15.842547094594593,
+          "voice_rtt_p95_ms_median": 112.492025,
+          "video_delivered_mbps_median": 5.730569758970223
+        },
+        "STRONG_40": {
+          "samples": 6,
+          "sla_success_ratio": 0.8333333333333334,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 13.196113859542915,
+          "voice_rtt_p95_ms_median": 109.24670800000001,
+          "video_delivered_mbps_median": 3.6351861279972493
+        }
+      },
+      "baseline_features": {
+        "video_ue_count": 8.0,
+        "active_voice_count": 2.0,
+        "video_base_demand_mbps": 7.807970032846798,
+        "video_offered_mbps": 7.807970032846798,
+        "video_delivered_mbps": 7.870815424966738,
+        "video_delivery_ratio": 1.0,
+        "voice_delivery_ratio": 0.9900220750551876,
+        "voice_loss_percent": 0.9977924944812362,
+        "voice_jitter_ms": 13.796557965561224,
+        "voice_rtt_p95_ms": 125.26585899999999,
+        "ue9_active": 1.0,
+        "ue10_active": 1.0
+      }
+    }
+  ]
+}
