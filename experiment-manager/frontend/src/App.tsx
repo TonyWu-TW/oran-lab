@@ -113,7 +113,10 @@ function App() {
       setPlatform(nextPlatform)
       setExperiments(nextExperiments)
       setRuns(nextRuns)
-      if (!selectedId && nextExperiments[0]) setSelectedId(nextExperiments[0].id)
+      if (!selectedId && nextExperiments[0]) {
+        const running = nextRuns.find(run => ['STARTING', 'RUNNING', 'STOPPING', 'DEGRADED'].includes(run.state))
+        setSelectedId(running?.experiment_id ?? nextExperiments[0].id)
+      }
       setLastUpdate(new Date())
       if (!quiet) setError('')
     } catch (reason) {
@@ -201,7 +204,7 @@ function App() {
 
       {error && <div className="alert"><X size={18} /><span>{error}</span><button onClick={() => setError('')}><X size={15} /></button></div>}
       {page === 'overview' && <Overview platform={platform} activeRun={activeRun} checks={checks} busy={busy} onPreflight={() => action('preflight', async () => setChecks((await api.preflight()).checks))} onNavigate={setPage} />}
-      {page === 'experiments' && <Experiments experiments={experiments} selectedId={selected?.id ?? ''} onSelect={setSelectedId} selected={selected} checks={checks} busy={busy} onValidate={() => selected && action('validate', async () => setChecks((await api.validate(selected.id)).checks))} onStart={() => selected && action('start', () => api.start(selected.id))} onUpdateUE={(ue, body) => selected && action(`ue-${ue.id}`, () => api.updateUE(selected.id, ue.id, body))} onViewConfig={(experimentId, ue) => void openConfig(experimentId, ue)} onViewGNBConfig={experimentId => void openGNBConfig(experimentId)} />}
+      {page === 'experiments' && <Experiments experiments={experiments} selectedId={selected?.id ?? ''} onSelect={setSelectedId} selected={selected} checks={checks} busy={busy} onValidate={() => selected && action('validate', async () => setChecks((await api.validate(selected.id)).checks))} onStart={() => selected && action('start', () => api.start(selected.id))} onUpdateUE={(ue, body) => selected && action(`ue-${ue.id}`, () => api.updateUE(selected.id, ue.id, body))} onBatchUpdate={(ues, buildBody) => selected && action('ue-batch', () => Promise.all(ues.map(ue => api.updateUE(selected.id, ue.id, buildBody(ue)))))} onViewConfig={(experimentId, ue) => void openConfig(experimentId, ue)} onViewGNBConfig={experimentId => void openGNBConfig(experimentId)} />}
       {page === 'live' && <Live platform={platform} activeRun={activeRun} latestRun={runs[0]} busy={busy} onStop={() => activeRun && action('stop', () => api.stop(activeRun.id))} onViewConfig={openRunConfig} />}
     </main>
     {configView && <div className="modal-backdrop" onMouseDown={() => setConfigView(null)}><section className="config-modal" onMouseDown={event => event.stopPropagation()}><div className="config-modal-head"><div><span className="eyebrow">EDITABLE CONFIG{configView.redacted ? ' · SECRETS REDACTED' : ' · YAML VALIDATED'}</span><h2>{configView.label.toUpperCase()} Config</h2><p>{configView.path}</p></div><button className="icon-button" onClick={() => setConfigView(null)}><X size={17} /></button></div><div className="config-warning">{configView.component === 'gnb' ? '直接修改 gNB YAML。後端會驗證 YAML、必要區段與受管 ZMQ endpoints；儲存後於下次啟動生效。' : '直接修改 srsUE config。儲存後會用於下次啟動；目前正在運行的 UE 不會即時重載。K、OPc、PIN 由後端保留。'}</div><textarea spellCheck={false} value={configView.content} onChange={event => setConfigView({ ...configView, content: event.target.value })} /><div className="config-modal-actions"><span>{configNotice}</span><button className="secondary" onClick={() => setConfigView(null)}>取消</button><button className="primary" disabled={busy === 'save-config'} onClick={() => void saveConfig()}>{busy === 'save-config' ? '儲存中…' : '儲存 Config'}</button></div></section></div>}
@@ -236,8 +239,11 @@ function CheckPanel({ checks }: { checks: CheckType[] }) {
   return <section className="panel checks"><div className="panel-head"><div><h3>檢查結果</h3><p>{passed} / {checks.length} 通過</p></div><Pill up={passed === checks.length}>{passed === checks.length ? '可啟動' : '需要處理'}</Pill></div><div className="check-list">{checks.map(item => <div key={item.id}><span className={item.status}><Check size={14} /></span><b>{item.id}</b><small>{item.message}</small></div>)}</div></section>
 }
 
-function Experiments({ experiments, selectedId, onSelect, selected, checks, busy, onValidate, onStart, onUpdateUE, onViewConfig, onViewGNBConfig }: { experiments: Experiment[]; selectedId: string; onSelect: (id: string) => void; selected?: Experiment; checks: CheckType[] | null; busy: string; onValidate: () => void; onStart: () => void; onUpdateUE: (ue: UE, body: Partial<UE>) => void; onViewConfig: (experimentId: string, ue: UE) => void; onViewGNBConfig: (experimentId: string) => void }) {
+function Experiments({ experiments, selectedId, onSelect, selected, checks, busy, onValidate, onStart, onUpdateUE, onBatchUpdate, onViewConfig, onViewGNBConfig }: { experiments: Experiment[]; selectedId: string; onSelect: (id: string) => void; selected?: Experiment; checks: CheckType[] | null; busy: string; onValidate: () => void; onStart: () => void; onUpdateUE: (ue: UE, body: Partial<UE>) => void; onBatchUpdate: (ues: UE[], buildBody: (ue: UE) => Partial<UE>) => void; onViewConfig: (experimentId: string, ue: UE) => void; onViewGNBConfig: (experimentId: string) => void }) {
   const [editing, setEditing] = useState<string>('')
+  const groupedScenario = (selected?.ues.length ?? 0) >= 10
+  const videoUEs = selected?.ues.filter(ue => ue.slot <= 8) ?? []
+  const voiceUEs = selected?.ues.filter(ue => ue.slot > 8) ?? []
   const totalOfferedLoad = selected?.ues.reduce((total, ue) => {
     const flow = trafficFlowOf(ue.traffic_defaults)
     if (!ue.enabled) return total
@@ -249,15 +255,140 @@ function Experiments({ experiments, selectedId, onSelect, selected, checks, busy
     <div className="editor-stack">
       {selected ? <>
         <section className="panel definition"><div className="panel-head"><div><span className="eyebrow">REVISION {selected.revision}</span><h2>{selected.name}</h2><p>{selected.description}</p></div><div><select aria-label="選擇實驗" value={selectedId} disabled={!!busy} onChange={event => onSelect(event.target.value)}>{experiments.map(experiment => <option key={experiment.id} value={experiment.id}>{experiment.name} · {experiment.expected_ue_count} UE</option>)}</select><Pill up={selected.monitoring_enabled}>監控啟用</Pill></div></div><div className="definition-grid"><div><span>預期 UE</span><b>{selected.expected_ue_count}</b></div><div><span>總 Target Offered Load</span><b>{totalOfferedLoad.toFixed(2)} Mbps</b></div><div><span>Scenario</span><b>{selected.scenario}</b></div><div><span>拓撲</span><b>FDD · ZMQ</b></div></div><div className="button-row"><button className="secondary" disabled={!!busy} onClick={() => onViewGNBConfig(selected.id)}><FileText />gNB Config</button><button className="secondary" disabled={!!busy} onClick={onValidate}><ShieldCheck />驗證設定</button><button className="primary" disabled={!!busy} onClick={onStart}><Play />{busy === 'start' ? '啟動中…' : '啟動實驗'}</button></div></section>
-        <div className="section-title"><div><h3>UE 與 Channel</h3><p>敏感 SIM credentials 不會顯示；channel 變更在下次啟動套用</p></div></div>
-        {selected.ues.map(ue => <UECard key={ue.id} ue={ue} experimentId={selected.id} open={editing === ue.id} setOpen={() => setEditing(editing === ue.id ? '' : ue.id)} saving={busy === `ue-${ue.id}`} onSave={body => onUpdateUE(ue, body)} onViewConfig={onViewConfig} />)}
+        <div className="section-title"><div><h3>UE 流量角色與 Channel</h3><p>可先批次設定整組流量，再展開單台 UE 微調；變更會用於下一次 Run</p></div></div>
+        {groupedScenario ? <>
+          <UEBatchPanel kind="video" ues={videoUEs} saving={busy === 'ue-batch'} onApply={buildBody => onBatchUpdate(videoUEs, buildBody)} />
+          <div className="ue-group-list">
+            {videoUEs.map(ue => <UECard key={ue.id} role="影片" ue={ue} experimentId={selected.id} open={editing === ue.id} setOpen={() => setEditing(editing === ue.id ? '' : ue.id)} saving={busy === `ue-${ue.id}`} onSave={body => onUpdateUE(ue, body)} onViewConfig={onViewConfig} />)}
+          </div>
+          <UEBatchPanel kind="voice" ues={voiceUEs} saving={busy === 'ue-batch'} onApply={buildBody => onBatchUpdate(voiceUEs, buildBody)} />
+          <div className="ue-group-list">
+            {voiceUEs.map(ue => <UECard key={ue.id} role="通話" ue={ue} experimentId={selected.id} open={editing === ue.id} setOpen={() => setEditing(editing === ue.id ? '' : ue.id)} saving={busy === `ue-${ue.id}`} onSave={body => onUpdateUE(ue, body)} onViewConfig={onViewConfig} />)}
+          </div>
+        </> : selected.ues.map(ue => <UECard key={ue.id} ue={ue} experimentId={selected.id} open={editing === ue.id} setOpen={() => setEditing(editing === ue.id ? '' : ue.id)} saving={busy === `ue-${ue.id}`} onSave={body => onUpdateUE(ue, body)} onViewConfig={onViewConfig} />)}
         {checks && <CheckPanel checks={checks} />}
       </> : <section className="panel empty">尚未建立實驗設定</section>}
     </div>
   </div>
 }
 
-function UECard({ ue, experimentId, open, setOpen, saving, onSave, onViewConfig }: { ue: UE; experimentId: string; open: boolean; setOpen: () => void; saving: boolean; onSave: (body: Partial<UE>) => void; onViewConfig: (experimentId: string, ue: UE) => void }) {
+function UEBatchPanel({ kind, ues, saving, onApply }: {
+  kind: 'video' | 'voice'
+  ues: UE[]
+  saving: boolean
+  onApply: (buildBody: (ue: UE) => Partial<UE>) => void
+}) {
+  const firstFlow = trafficFlowOf(ues[0]?.traffic_defaults ?? profileDefaults[kind === 'video' ? 'short_video' : 'rtp_voice'])
+  const sourceSignature = JSON.stringify(ues.map(ue => ue.traffic_defaults))
+  const [offered, setOffered] = useState(Number(firstFlow.params.offered_load_mbps ?? 1))
+  const [variation, setVariation] = useState(Number(firstFlow.params.variation_percent ?? 35))
+  const [peak, setPeak] = useState(Number(firstFlow.params.peak_limit_mbps ?? 1.35))
+  const [pattern, setPattern] = useState(String(firstFlow.params.traffic_pattern ?? 'wave'))
+  const [voiceBitrate, setVoiceBitrate] = useState(Number(firstFlow.params.bitrate_kbps ?? 96))
+  const [packetInterval, setPacketInterval] = useState(Number(firstFlow.params.packet_interval_ms ?? 20))
+  const [voiceRunMode, setVoiceRunMode] = useState<TrafficFlow['run_mode']>(firstFlow.run_mode)
+  const [voiceDuration, setVoiceDuration] = useState(Number(firstFlow.duration_seconds ?? 300))
+  const [draftError, setDraftError] = useState('')
+
+  useEffect(() => {
+    if (!ues[0]) return
+    const flow = trafficFlowOf(ues[0].traffic_defaults)
+    setOffered(Number(flow.params.offered_load_mbps ?? 1))
+    setVariation(Number(flow.params.variation_percent ?? 35))
+    setPeak(Number(flow.params.peak_limit_mbps ?? 1.35))
+    setPattern(String(flow.params.traffic_pattern ?? 'wave'))
+    setVoiceBitrate(Number(flow.params.bitrate_kbps ?? 96))
+    setPacketInterval(Number(flow.params.packet_interval_ms ?? 20))
+    setVoiceRunMode(flow.run_mode)
+    setVoiceDuration(Number(flow.duration_seconds ?? 300))
+    setDraftError('')
+  }, [sourceSignature])
+
+  const apply = () => {
+    if (kind === 'video') {
+      if (peak < offered) {
+        setDraftError('Peak Limit 必須大於或等於每台 Offered Load')
+        return
+      }
+      onApply(ue => {
+        const current = trafficFlowOf(ue.traffic_defaults)
+        const base = current.type === 'short_video' ? current : profileDefaults.short_video
+        return {
+          traffic_defaults: {
+            version: 2,
+            flows: [{
+              ...base,
+              type: 'short_video',
+              application_protocol: 'http',
+              transport: 'tcp',
+              direction: 'DL',
+              run_mode: 'continuous',
+              duration_seconds: null,
+              params: {
+                ...base.params,
+                offered_load_mbps: offered,
+                variation_percent: variation,
+                peak_limit_mbps: peak,
+                traffic_pattern: pattern,
+              },
+            }],
+          },
+        }
+      })
+    } else {
+      onApply(ue => {
+        const current = trafficFlowOf(ue.traffic_defaults)
+        const base = current.type === 'rtp_voice' ? current : profileDefaults.rtp_voice
+        return {
+          traffic_defaults: {
+            version: 2,
+            flows: [{
+              ...base,
+              type: 'rtp_voice',
+              application_protocol: 'rtp-like',
+              transport: 'udp',
+              direction: 'BOTH',
+              run_mode: voiceRunMode,
+              duration_seconds: voiceRunMode === 'continuous' ? null : voiceDuration,
+              params: {
+                ...base.params,
+                bitrate_kbps: voiceBitrate,
+                packet_interval_ms: packetInterval,
+              },
+            }],
+          },
+        }
+      })
+    }
+    setDraftError('')
+  }
+
+  return <section className={`panel ue-batch-panel ${kind}`}>
+    <div className="ue-batch-head">
+      <div className="ue-group-icon">{kind === 'video' ? <Activity /> : <Radio />}</div>
+      <div><span className="eyebrow">{kind === 'video' ? 'EMBB VIDEO POOL' : 'VOICE QOS POOL'}</span><h3>{kind === 'video' ? 'UE1–UE8 · 短影片背景流量' : 'UE9–UE10 · 語音通話'}</h3><p>{kind === 'video' ? '8 台 UE 各自產生有波動的 HTTP/TCP 下行流量' : '兩台 UE 可各自啟動 RTP-like/UDP 雙向通話，供 VoiceGuard 保護'}</p></div>
+      <span className="ue-count">{ues.length} UE</span>
+    </div>
+    <div className={`ue-batch-fields ${kind}`}>
+      {kind === 'video' ? <>
+        <label><span>每台 Offered (Mbps)</span><CommitNumberInput value={offered} min={0.01} max={100} step={0.05} onCommit={setOffered} /></label>
+        <label><span>波動幅度 (%)</span><CommitNumberInput value={variation} min={0} max={100} step={1} integer onCommit={setVariation} /></label>
+        <label><span>每台 Peak (Mbps)</span><CommitNumberInput value={peak} min={0.01} max={100} step={0.05} onCommit={setPeak} /></label>
+        <label><span>波動模式</span><select value={pattern} onChange={event => setPattern(event.target.value)}><option value="fixed">Fixed</option><option value="wave">Wave</option><option value="random_burst">Random Burst</option><option value="adaptive">Adaptive Video</option></select></label>
+      </> : <>
+        <label><span>每台 Offered (Kbps)</span><CommitNumberInput value={voiceBitrate} min={8} max={5000} step={8} integer onCommit={setVoiceBitrate} /></label>
+        <label><span>封包間隔 (ms)</span><CommitNumberInput value={packetInterval} min={5} max={1000} step={1} integer onCommit={setPacketInterval} /></label>
+        <label><span>執行方式</span><select value={voiceRunMode} onChange={event => setVoiceRunMode(event.target.value as TrafficFlow['run_mode'])}><option value="continuous">持續到手動停止</option><option value="duration">指定時間</option></select></label>
+        <label><span>Duration (s)</span><CommitNumberInput value={voiceDuration} min={1} max={86400} step={1} integer disabled={voiceRunMode === 'continuous'} onCommit={setVoiceDuration} /></label>
+      </>}
+      <button className="primary batch-apply" disabled={saving || !ues.length} onClick={apply}>{saving ? '套用中…' : `套用到 ${ues.length} 台 UE`}</button>
+    </div>
+    {draftError && <div className="traffic-error"><X size={13} />{draftError}</div>}
+    <div className="ue-batch-note"><RefreshCw size={12} />批次套用只修改 Traffic，不會覆蓋各 UE 的 IMSI、Channel 與影片 Random Seed。</div>
+  </section>
+}
+
+function UECard({ ue, experimentId, role, open, setOpen, saving, onSave, onViewConfig }: { ue: UE; experimentId: string; role?: string; open: boolean; setOpen: () => void; saving: boolean; onSave: (body: Partial<UE>) => void; onViewConfig: (experimentId: string, ue: UE) => void }) {
   const [pathLoss, setPathLoss] = useState(String(ue.path_loss_db))
   const [channel, setChannel] = useState(ue.channel)
   const [channelNumbers, setChannelNumbers] = useState(() => ({
@@ -373,7 +504,7 @@ function UECard({ ue, experimentId, open, setOpen, saving, onSave, onViewConfig 
   }
 
   return <section className={`panel ue-card ${open ? 'open' : ''}`}>
-    <button className="ue-summary" onClick={setOpen}><div className="ue-index">{ue.slot}</div><div><b>{ue.display_name}</b><span>{ue.namespace} · RX {ue.rx_port} / TX {ue.tx_port}</span><small>{trafficSummary(traffic)}</small></div><Pill up={ue.enabled}>{ue.enabled ? 'Enabled' : 'Disabled'}</Pill><SlidersHorizontal /></button>
+    <button className="ue-summary" onClick={setOpen}><div className="ue-index">{ue.slot}</div><div><div className="ue-name-line"><b>{ue.display_name}</b>{role && <i className={`ue-role ${role === '通話' ? 'voice' : 'video'}`}>{role}</i>}</div><span>{ue.namespace} · RX {ue.rx_port} / TX {ue.tx_port}</span><small>{trafficSummary(traffic)}</small></div><Pill up={ue.enabled}>{ue.enabled ? 'Enabled' : 'Disabled'}</Pill><SlidersHorizontal /></button>
     {open && <div className="ue-editor"><div className="field-row"><label><span>IMSI</span><input value={ue.imsi} disabled /></label><label><span>APN / DNN</span><input value={ue.apn} disabled /></label><label><span>Path loss (dB)</span><input type="number" min="0" max="200" step="any" value={pathLoss} onChange={event => { setPathLoss(event.target.value); setDraftError('') }} /></label></div>
       <div className="editor-section-title"><div><b>Channel 設定</b><span>儲存後於下一次 Radio Stack 啟動套用</span></div></div>
       <div className="channel-grid">
