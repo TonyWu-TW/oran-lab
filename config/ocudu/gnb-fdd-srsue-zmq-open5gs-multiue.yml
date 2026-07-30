@@ -1,0 +1,85 @@
+# SPDX-FileCopyrightText: Copyright (C) 2021-2026 Software Radio Systems Limited
+# SPDX-License-Identifier: BSD-3-Clause-Open-MPI
+
+
+# This example configuration outlines how to configure the OCUDU gNB to create a single FDD cell
+# transmitting in band 3, with 20 MHz bandwidth and 15 kHz sub-carrier-spacing. A USRP B200 is configured
+# as the RF frontend using split 8, with a Leo Bodnar GPSDO as an external reference clock.
+
+# This particular configuration is intended to be used with srsUE. Note the `pdcch` parameters set in the
+# `cell_cfg` section. These are set to match the capabilities of srsUE.
+
+cu_cp:
+  amf:
+    addrs: 127.0.0.5
+    port: 38412
+    bind_addrs: 127.0.0.1
+    supported_tracking_areas:
+      - tac: 1
+        plmn_list:
+          - plmn: "99970"
+            tai_slice_support_list:
+              - sst: 1
+
+cu_up:
+  ngu:
+    socket:
+      - bind_addr: 127.0.0.1
+
+ru_sdr:
+  device_driver: zmq
+  device_args: tx_port=tcp://*:2000,rx_port=tcp://localhost:2001,id=gnb,base_srate=23.04e6
+  srate: 23.04
+  tx_gain: 0
+  rx_gain: 0
+
+cell_cfg:
+  dl_arfcn: 368500
+  band: 3
+  channel_bandwidth_MHz: 20
+  common_scs: 15
+  plmn: "99970"
+  tac: 1
+  pdcch:
+    dedicated:
+      ss2_type: common
+      dci_format_0_1_and_1_1: false
+    common:
+      ss0_index: 0
+      coreset0_index: 12
+  prach:
+    prach_config_index: 1
+    total_nof_ra_preambles: 64
+    nof_ssb_per_ro: 1
+    nof_cb_preambles_per_ssb: 64
+  pdsch:
+    mcs_table: qam64
+  pusch:
+    mcs_table: qam64
+
+log:
+  filename: /tmp/gnb.log
+  all_level: info
+
+pcap:
+  mac_enable: enable
+  mac_filename: /tmp/gnb_mac.pcap
+  ngap_enable: enable
+  ngap_filename: /tmp/gnb_ngap.pcap
+  n3_enable: true
+  n3_filename: /tmp/gnb_n3.pcap
+
+e2:
+  enable_du_e2: true
+  e2sm_kpm_enabled: true
+  e2sm_rc_enabled: true
+  addr: 127.0.0.1
+  port: 36421
+  bind_addr: 127.0.0.1
+
+metrics:
+  layers:
+    enable_rlc: true
+    enable_sched: true
+  periodicity:
+    du_report_period: 1000

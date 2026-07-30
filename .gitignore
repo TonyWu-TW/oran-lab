@@ -1,5 +1,8 @@
 logs/
 run/
+backup/
+experiments/definitions/
+experiments/runs/
 
 **/build/
 **/autom4te.cache/

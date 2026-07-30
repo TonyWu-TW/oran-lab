@@ -1,0 +1,22 @@
+[Unit]
+Description=O-RAN Experiment Manager
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=zju
+Group=zju
+WorkingDirectory=/home/zju/Desktop/oran-lab/experiment-manager/backend
+Environment=ORAN_LAB_ROOT=/home/zju/Desktop/oran-lab
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/zju/Desktop/oran-lab/experiment-manager/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8088
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+# Radio processes are separately managed by oranlabctl and must survive a
+# Manager-only deploy/restart.
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

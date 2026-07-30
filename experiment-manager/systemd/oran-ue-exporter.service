@@ -1,0 +1,14 @@
+[Unit]
+Description=O-RAN multi-UE Prometheus exporter
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 /home/zju/Desktop/oran-lab/monitoring/exporters/ue_exporter.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+
