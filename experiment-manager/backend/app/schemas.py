@@ -135,7 +135,7 @@ class EventOut(ORMModel):
 
 
 class TrafficCreate(BaseModel):
-    ue: str = Field(pattern=r"^ue[1-3]$")
+    ue: str = Field(pattern=r"^ue(?:[1-9]|10)$")
     protocol: str = Field(pattern=r"^(ping|tcp|udp)$")
     direction: str = Field(default="UL", pattern=r"^(UL|DL)$")
     target: str = "10.45.0.1"

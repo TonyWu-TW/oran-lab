@@ -162,6 +162,17 @@ def parse_iperf_report(result: subprocess.CompletedProcess[str] | None, stdout: 
     receiver_bps = receiver.get("bits_per_second")
     receiver_seconds = receiver.get("seconds")
     receiver_bytes = receiver.get("bytes")
+    # Some iperf3 UDP versions return zero for the embedded server
+    # bits_per_second even though packet/loss counters are valid.  Derive the
+    # delivered rate from those counters instead of showing a false 0 Mbps.
+    if (
+        not receiver_bps
+        and sender.get("bits_per_second")
+        and receiver.get("lost_percent") is not None
+    ):
+        receiver_bps = sender["bits_per_second"] * (
+            1.0 - float(receiver["lost_percent"]) / 100.0
+        )
     if not receiver_bps and receiver_seconds and receiver_bytes:
         receiver_bps = receiver_bytes * 8.0 / receiver_seconds
     return {

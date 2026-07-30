@@ -17,7 +17,6 @@ BASE_GNB = LAB_ROOT / "config" / "ocudu" / "gnb-fdd-srsue-zmq-open5gs-multiue.ym
 BASE_BROKER = LAB_ROOT / "radio" / "broker" / "build" / "multi_ue_scenario.py"
 ACTIVE_CONFIG = LAB_ROOT / "experiments" / "runs" / "active-run.json"
 DEFINITIONS_ROOT = LAB_ROOT / "experiments" / "definitions"
-ADMISSION_STAGE_FILE = LAB_ROOT / "run" / "manager" / "ue-admission-stage"
 SENSITIVE_LINE = re.compile(
     r"^(\s*)(opc|op|k|pin|password)(\s*=)(.*)$", re.IGNORECASE | re.MULTILINE
 )
@@ -196,55 +195,20 @@ def write_gnb_definition_config(experiment_id: str, content: str) -> Path:
 
 def render_broker(path_losses: dict[int, float]) -> str:
     content = BASE_BROKER.read_text()
-    for slot, loss in path_losses.items():
-        pattern = rf"(self\.ue{slot}_path_loss_db\s*=\s*ue{slot}_path_loss_db\s*=\s*)[-+0-9.]+"
-        content, count = re.subn(pattern, rf"\g<1>{loss}", content, count=1)
+    slots = sorted(path_losses)
+    if not slots or len(slots) > 10:
+        raise ValueError("broker requires 1 to 10 enabled UEs")
+    replacements = {
+        r"^ACTIVE_UE_SLOTS\s*=.*$": f"ACTIVE_UE_SLOTS = {slots!r}",
+        r"^CONFIGURED_PATH_LOSSES\s*=.*$": (
+            f"CONFIGURED_PATH_LOSSES = "
+            f"{dict((slot, float(path_losses[slot])) for slot in slots)!r}"
+        ),
+    }
+    for pattern, replacement in replacements.items():
+        content, count = re.subn(pattern, replacement, content, count=1, flags=re.MULTILINE)
         if count != 1:
-            raise ValueError(f"broker path-loss variable for UE {slot} not found")
-    constructor = "    tb = top_block_cls()\n"
-    if constructor not in content:
-        raise ValueError("broker constructor hook not found")
-    staged_constructor = constructor + f"""
-    # Keep all ZMQ streams connected, but admit UE radio paths one at a time.
-    # This prevents identical simulated UEs from colliding on the same PRACH.
-    admission_stage_file = {str(ADMISSION_STAGE_FILE)!r}
-    desired_path_losses = {{
-        1: tb.get_ue1_path_loss_db(),
-        2: tb.get_ue2_path_loss_db(),
-        3: tb.get_ue3_path_loss_db(),
-    }}
-    tb.set_ue2_path_loss_db(200.0)
-    tb.set_ue3_path_loss_db(200.0)
-"""
-    content = content.replace(constructor, staged_constructor, 1)
-    event_loop = "    qapp.exec_()\n"
-    if event_loop not in content:
-        raise ValueError("broker event-loop hook not found")
-    admission_control = """    admitted_stage = 0
-
-    def update_admission_stage():
-        nonlocal admitted_stage
-        try:
-            with open(admission_stage_file, 'r', encoding='utf-8') as stage_handle:
-                requested_stage = int(stage_handle.read().strip())
-        except (OSError, ValueError):
-            requested_stage = 1
-        requested_stage = max(1, min(3, requested_stage))
-        if requested_stage == admitted_stage:
-            return
-        tb.set_ue1_path_loss_db(desired_path_losses[1])
-        tb.set_ue2_path_loss_db(desired_path_losses[2] if requested_stage >= 2 else 200.0)
-        tb.set_ue3_path_loss_db(desired_path_losses[3] if requested_stage >= 3 else 200.0)
-        admitted_stage = requested_stage
-        print(f'UE admission stage {admitted_stage}/3', flush=True)
-
-    admission_timer = Qt.QTimer()
-    admission_timer.timeout.connect(update_admission_stage)
-    admission_timer.start(250)
-    update_admission_stage()
-
-""" + event_loop
-    content = content.replace(event_loop, admission_control, 1)
+            raise ValueError(f"broker template hook not found: {pattern}")
     return content
 
 
@@ -258,6 +222,7 @@ def generate_run_configs(experiment: Experiment, snapshot: Path) -> dict[str, ob
     os.chmod(gnb_target, 0o600)
 
     ue_paths: list[str] = []
+    ue_slots: list[int] = []
     path_losses: dict[int, float] = {}
     for ue in sorted((item for item in experiment.ues if item.enabled), key=lambda item: item.slot):
         target = config_dir / f"ue{ue.slot}.conf"
@@ -265,6 +230,7 @@ def generate_run_configs(experiment: Experiment, snapshot: Path) -> dict[str, ob
         target.write_text(content)
         os.chmod(target, 0o600)
         ue_paths.append(str(target))
+        ue_slots.append(ue.slot)
         path_losses[ue.slot] = ue.path_loss_db
 
     broker_target = config_dir / "broker.py"
@@ -276,6 +242,7 @@ def generate_run_configs(experiment: Experiment, snapshot: Path) -> dict[str, ob
         "run_id": snapshot.name,
         "gnb_config": str(gnb_target),
         "ue_configs": ue_paths,
+        "ue_slots": ue_slots,
         "broker": str(broker_target),
     }
     temporary = ACTIVE_CONFIG.with_suffix(".tmp")

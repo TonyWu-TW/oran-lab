@@ -59,14 +59,14 @@ cell_cfg:
 
 log:
   filename: /tmp/gnb.log
-  all_level: info
+  all_level: warning
 
 pcap:
-  mac_enable: enable
+  mac_enable: disable
   mac_filename: /tmp/gnb_mac.pcap
-  ngap_enable: enable
+  ngap_enable: disable
   ngap_filename: /tmp/gnb_ngap.pcap
-  n3_enable: true
+  n3_enable: false
   n3_filename: /tmp/gnb_n3.pcap
 
 e2:

@@ -5,10 +5,10 @@ After=network.target
 [Service]
 Type=simple
 User=root
+Environment=UE_NAMES=ue1,ue2,ue3,ue4,ue5,ue6,ue7,ue8,ue9,ue10
 ExecStart=/usr/bin/python3 /home/zju/Desktop/oran-lab/monitoring/exporters/ue_exporter.py
 Restart=always
 RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
-

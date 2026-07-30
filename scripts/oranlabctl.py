@@ -36,7 +36,21 @@ BROKER = LAB / "radio/broker/build/multi_ue_scenario.py"
 EXPERIMENTS_ROOT = LAB / "experiments" / "runs"
 ACTIVE_CONFIG = EXPERIMENTS_ROOT / "active-run.json"
 
-ZMQ_PORTS = (2000, 2001, 2100, 2101, 2200, 2201, 2300, 2301)
+MAX_UES = 10
+UE_SLOTS = tuple(range(1, MAX_UES + 1))
+UE_NAMES = tuple(f"ue{slot}" for slot in UE_SLOTS)
+
+
+def ue_base_port(slot: int) -> int:
+    # 3001 is reserved by the local Grafana service.
+    return 2000 + slot * 100 if slot < 10 else 3100
+
+
+ZMQ_PORTS = (2000, 2001, *(
+    port
+    for slot in UE_SLOTS
+    for port in (ue_base_port(slot), ue_base_port(slot) + 1)
+))
 
 
 @dataclass(frozen=True)
@@ -144,7 +158,8 @@ def platform_status() -> dict[str, Any]:
 def load_runtime_config() -> dict[str, Any]:
     fallback = {
         "gnb_config": str(GNB_CONFIG),
-        "ue_configs": [str(UE_CONFIG_DIR / f"ue{index}.conf") for index in range(1, 4)],
+        "ue_configs": [str(UE_CONFIG_DIR / f"ue{index}.conf") for index in UE_SLOTS],
+        "ue_slots": list(UE_SLOTS),
         "broker": str(BROKER),
     }
     if not ACTIVE_CONFIG.exists():
@@ -152,11 +167,20 @@ def load_runtime_config() -> dict[str, Any]:
     try:
         data = json.loads(ACTIVE_CONFIG.read_text())
         paths = [data["gnb_config"], data["broker"], *data["ue_configs"]]
-        if len(data["ue_configs"]) != 3:
-            raise ValueError("the validated controller currently requires exactly 3 UE configs")
+        ue_configs = data["ue_configs"]
+        ue_slots = data.get("ue_slots", list(range(1, len(ue_configs) + 1)))
+        if not 1 <= len(ue_configs) <= MAX_UES:
+            raise ValueError("controller requires 1 to 10 UE configs")
+        if (
+            len(ue_slots) != len(ue_configs)
+            or len(set(ue_slots)) != len(ue_slots)
+            or any(slot not in UE_SLOTS for slot in ue_slots)
+        ):
+            raise ValueError("ue_slots must contain unique values in range 1..10")
         root = EXPERIMENTS_ROOT.resolve()
         for raw_path in paths:
             Path(raw_path).resolve().relative_to(root)
+        data["ue_slots"] = ue_slots
         return data
     except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
         raise RuntimeError(f"invalid active-run configuration: {exc}") from exc
@@ -177,7 +201,7 @@ def preflight(config: dict[str, Any] | None = None) -> dict[str, Any]:
         ("broker", Path(config["broker"])),
     ):
         add(f"file-{label}", path.exists(), str(path))
-    for index, raw_path in enumerate(config["ue_configs"], 1):
+    for index, raw_path in zip(config["ue_slots"], config["ue_configs"]):
         path = Path(raw_path)
         add(f"ue{index}-config", path.exists(), str(path))
     add("mongodb", docker_running("open5gs-mongodb"), "Open5GS MongoDB")
@@ -186,7 +210,13 @@ def preflight(config: dict[str, Any] | None = None) -> dict[str, Any]:
     registry = read_registry()
     registered_running = any(process_info(int(meta["pid"]))["running"] for meta in registry.values())
     add("manager-not-running", not registered_running, "No registered experiment processes")
-    busy = [port for port in ZMQ_PORTS if port_in_use(port)]
+    required_ports = [2000, 2001]
+    required_ports.extend(
+        port
+        for slot in config["ue_slots"]
+        for port in (ue_base_port(slot), ue_base_port(slot) + 1)
+    )
+    busy = [port for port in required_ports if port_in_use(port)]
     add("zmq-ports", not busy, f"busy={busy}" if busy else "all free")
     free_gb = shutil.disk_usage(LAB).free / (1024**3)
     add("disk-space", free_gb >= 10, f"{free_gb:.1f} GiB free")
@@ -221,10 +251,10 @@ def wait_for_ports(ports: tuple[int, ...], timeout: float, pid: int | None = Non
     return False
 
 
-def set_admission_stage(stage: int) -> None:
+def set_admission_stage(stage: int, ue_count: int) -> None:
     """Tell the broker which UE signals may enter the shared RF path."""
-    if stage not in (1, 2, 3):
-        raise ValueError("UE admission stage must be 1, 2, or 3")
+    if not 1 <= stage <= ue_count <= MAX_UES:
+        raise ValueError("UE admission stage must be within the active UE count")
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     temporary = ADMISSION_STAGE_FILE.with_suffix(".tmp")
     temporary.write_text(f"{stage}\n")
@@ -236,9 +266,9 @@ def run_checked(command: list[str], **kwargs: Any) -> None:
     subprocess.run(command, check=True, **kwargs)
 
 
-def prepare_network() -> None:
-    for index in range(1, 4):
-        namespace = f"ue{index}"
+def prepare_network(slots: list[int]) -> None:
+    for slot in slots:
+        namespace = f"ue{slot}"
         existing = subprocess.run(["ip", "netns", "list"], capture_output=True, text=True, check=True).stdout
         if namespace not in {line.split()[0] for line in existing.splitlines() if line.strip()}:
             run_checked(["ip", "netns", "add", namespace])
@@ -317,13 +347,13 @@ def components(config: dict[str, Any]) -> list[Component]:
             environment={"QT_QPA_PLATFORM": "offscreen"},
         ),
     ]
-    for index, ue_config in enumerate(config["ue_configs"], 1):
+    for slot, ue_config in zip(config["ue_slots"], config["ue_configs"]):
         items.append(Component(
-            f"ue{index}",
+            f"ue{slot}",
             [*line_buffered, str(SRSUE), str(ue_config)],
             SRSUE.parent,
-            LOG_DIR / f"ue{index}.log",
-            RUN_DIR / f"ue{index}.stdin",
+            LOG_DIR / f"ue{slot}.log",
+            RUN_DIR / f"ue{slot}.stdin",
         ))
     return items
 
@@ -338,74 +368,95 @@ def start() -> dict[str, Any]:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     for path in LOG_DIR.glob("*.log"):
         path.unlink()
-    prepare_network()
+    slots = config["ue_slots"]
+    prepare_network(slots)
     registry: dict[str, dict[str, Any]] = {}
     try:
-        # All three UE ZMQ sources must exist for the GNU Radio add block, but
+        # All UE ZMQ sources must exist for the GNU Radio add block, but
         # only one UE at a time is admitted to Random Access. The broker reads
         # this stage file and temporarily mutes the later UE RF paths.
-        set_admission_stage(1)
+        set_admission_stage(1, len(slots))
         for component in components(config):
             start_component(component, registry)
             if component.name == "nearRT-RIC":
                 time.sleep(2)
             elif component.name == "gnb":
-                if not wait_for_log(
-                    component.log,
-                    ("N2: Connection to AMF", "E2: Connection to Near-RT-RIC"),
-                    15,
-                    int(registry[component.name]["pid"]),
-                ):
-                    raise RuntimeError("gNB failed N2/E2 readiness")
+                # The ZMQ lower PHY needs the broker's REP endpoint before it
+                # can make forward progress, so readiness is checked after the
+                # broker has started.
+                time.sleep(1)
             elif component.name == "broker":
+                broker_ports = (2001, *(
+                    ue_base_port(slot) for slot in slots
+                ))
                 if not wait_for_ports(
-                    (2001, 2100, 2200, 2300),
+                    broker_ports,
                     10,
                     int(registry[component.name]["pid"]),
                 ):
                     raise RuntimeError("Broker failed ZMQ readiness")
+                if not wait_for_log(
+                    LOG_DIR / "gnb.log",
+                    ("N2: Connection to AMF", "E2: Connection to Near-RT-RIC"),
+                    60,
+                    int(registry["gnb"]["pid"]),
+                ):
+                    raise RuntimeError("gNB failed N2/E2 readiness after Broker startup")
             elif component.name.startswith("ue"):
                 time.sleep(0.5)
-        for index in range(1, 4):
-            set_admission_stage(index)
-            log = LOG_DIR / f"ue{index}.log"
+        for stage, slot in enumerate(slots, 1):
+            set_admission_stage(stage, len(slots))
+            log = LOG_DIR / f"ue{slot}.log"
             if not wait_for_log(
                 log,
                 ("RRC Connected", "PDU Session Establishment successful"),
                 60,
-                int(registry[f"ue{index}"]["pid"]),
+                int(registry[f"ue{slot}"]["pid"]),
             ):
-                raise RuntimeError(f"ue{index} failed attach/PDU readiness")
-            run_checked(["ip", "netns", "exec", f"ue{index}", "ip", "route", "replace", "default", "dev", "tun_srsue"])
+                raise RuntimeError(f"ue{slot} failed attach/PDU readiness")
+            run_checked(["ip", "netns", "exec", f"ue{slot}", "ip", "route", "replace", "default", "dev", "tun_srsue"])
         return platform_status()
     except Exception:
         stop()
         raise
 
 
-def terminate_group(pid: int, timeout: float = 4.0) -> None:
-    try:
-        os.killpg(pid, signal.SIGTERM)
-    except (ProcessLookupError, PermissionError):
-        return
+def terminate_groups(pids: list[int], timeout: float = 4.0) -> None:
+    """Stop component process groups concurrently.
+
+    Waiting four seconds per component made a 10 UE shutdown take almost one
+    minute.  All groups can use the same grace period safely.
+    """
+    remaining: set[int] = set()
+    for pid in pids:
+        try:
+            os.killpg(pid, signal.SIGTERM)
+            remaining.add(pid)
+        except (ProcessLookupError, PermissionError):
+            continue
     deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline and Path(f"/proc/{pid}").exists():
+    while time.monotonic() < deadline and remaining:
+        remaining = {pid for pid in remaining if Path(f"/proc/{pid}").exists()}
         time.sleep(0.2)
-    if Path(f"/proc/{pid}").exists():
+    for pid in remaining:
         try:
             os.killpg(pid, signal.SIGKILL)
-        except ProcessLookupError:
+        except (ProcessLookupError, PermissionError):
             pass
 
 
 def stop(remove_active_config: bool = True) -> dict[str, Any]:
     require_root()
     registry = read_registry()
-    order = ["broker", "ue3", "ue2", "ue1", "gnb", "nearRT-RIC"]
-    for name in order:
-        metadata = registry.get(name)
-        if metadata:
-            terminate_group(int(metadata["pid"]))
+    ue_components = sorted(
+        (name for name in registry if name in UE_NAMES),
+        key=lambda name: int(name[2:]),
+        reverse=True,
+    )
+    order = ["broker", *ue_components, "gnb", "nearRT-RIC"]
+    terminate_groups([
+        int(registry[name]["pid"]) for name in order if name in registry
+    ])
     for fifo in RUN_DIR.glob("*.stdin"):
         fifo.unlink(missing_ok=True)
     ADMISSION_STAGE_FILE.unlink(missing_ok=True)
@@ -418,8 +469,8 @@ def stop(remove_active_config: bool = True) -> dict[str, Any]:
 def recover_ue(ue: str) -> dict[str, Any]:
     """Rebuild the radio stack to clear UE, GNU Radio and ZMQ IQ backlogs."""
     require_root()
-    if ue not in {"ue1", "ue2", "ue3"}:
-        raise ValueError("UE must be ue1, ue2, or ue3")
+    if ue not in UE_NAMES:
+        raise ValueError("UE must be in range ue1..ue10")
     # Keep active-run.json so start() recreates the exact same immutable Run
     # snapshot. Rebuilding Broker and gNB is necessary because old UL IQ
     # samples can already be queued outside the UE process.
@@ -433,7 +484,7 @@ def recover_ue(ue: str) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=("status", "preflight", "start", "stop", "recover-ue"))
-    parser.add_argument("--ue", choices=("ue1", "ue2", "ue3"))
+    parser.add_argument("--ue", choices=UE_NAMES)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     try:

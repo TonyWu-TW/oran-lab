@@ -56,35 +56,66 @@ def seed_baseline() -> None:
                 changed = True
         if changed:
             database.commit()
-        if database.scalar(select(models.Experiment.id).limit(1)):
-            return
-        experiment = models.Experiment(
-            name="3 UE Clean Baseline",
-            description="已通過 N2/E2、三台 UE attach、UPF 與外網連線驗收的基線。",
-            expected_ue_count=3,
-            broker_capacity=3,
-            scenario="clean",
-        )
         identities = (
             (1, "999700000000001", "353490069873319"),
             (2, "999700000000002", "353490069873327"),
             (3, "999700000000003", "353490069873335"),
+            (4, "999700000000004", "353490069873343"),
+            (5, "999700000000005", "353490069873350"),
+            (6, "999700000000006", "353490069873368"),
+            (7, "999700000000007", "353490069873376"),
+            (8, "999700000000008", "353490069873384"),
+            (9, "999700000000009", "353490069873392"),
+            (10, "999700000000010", "353490069873400"),
         )
-        for slot, imsi, imei in identities:
-            experiment.ues.append(models.UEProfile(
-                slot=slot,
-                display_name=f"UE {slot}",
-                enabled=True,
-                imsi=imsi,
-                imei=imei,
-                rx_port=2000 + slot * 100,
-                tx_port=2001 + slot * 100,
-                namespace=f"ue{slot}",
-                path_loss_db=float((slot - 1) * 10),
-                channel=schemas.ChannelProfile().model_dump(),
-                traffic_defaults=default_traffic_defaults(),
-            ))
-        database.add(experiment)
+
+        def add_ues(
+            experiment: models.Experiment,
+            count: int,
+            varied_loss: bool,
+            bitrate: str = "750K",
+        ) -> None:
+            for slot, imsi, imei in identities[:count]:
+                traffic_defaults = default_traffic_defaults()
+                traffic_defaults["flows"][0]["params"]["bitrate"] = bitrate
+                experiment.ues.append(models.UEProfile(
+                    slot=slot,
+                    display_name=f"UE {slot}",
+                    enabled=True,
+                    imsi=imsi,
+                    imei=imei,
+                    rx_port=2000 + slot * 100 if slot < 10 else 3100,
+                    tx_port=2001 + slot * 100 if slot < 10 else 3101,
+                    namespace=f"ue{slot}",
+                    path_loss_db=float((slot - 1) * 10 if varied_loss else 0),
+                    channel=schemas.ChannelProfile().model_dump(),
+                    traffic_defaults=traffic_defaults,
+                ))
+
+        if not database.scalar(select(models.Experiment.id).limit(1)):
+            experiment = models.Experiment(
+                name="3 UE Clean Baseline",
+                description="已通過 N2/E2、三台 UE attach、UPF 與外網連線驗收的基線。",
+                expected_ue_count=3,
+                broker_capacity=3,
+                scenario="clean",
+            )
+            add_ues(experiment, 3, varied_loss=True)
+            database.add(experiment)
+
+        capacity = database.scalar(
+            select(models.Experiment).where(models.Experiment.name == "10 UE Capacity Test")
+        )
+        if not capacity:
+            capacity = models.Experiment(
+                name="10 UE Capacity Test",
+                description="單一 Cell、單一 gNB ZMQ stream 的 10 UE 容量與流量測試。",
+                expected_ue_count=10,
+                broker_capacity=10,
+                scenario="capacity",
+            )
+            add_ues(capacity, 10, varied_loss=False, bitrate="500K")
+            database.add(capacity)
         database.commit()
 
 
@@ -398,7 +429,7 @@ def validate_experiment(experiment: models.Experiment) -> dict[str, Any]:
 
     ues = enabled_ues(experiment)
     check("ue-count", len(ues) == experiment.expected_ue_count, f"enabled={len(ues)}, expected={experiment.expected_ue_count}")
-    check("mvp-topology", len(ues) == 3 and experiment.broker_capacity == 3, "目前已驗收的 control layer 固定為 3 UE")
+    check("managed-topology", 1 <= len(ues) <= 10, "control layer 支援 1–10 UE")
     check("unique-slot", len({ue.slot for ue in ues}) == len(ues), "UE slot 必須唯一")
     check("unique-imsi", len({ue.imsi for ue in ues}) == len(ues), "IMSI 必須唯一")
     ports = [port for ue in ues for port in (ue.rx_port, ue.tx_port)]
@@ -667,7 +698,8 @@ def run_start_worker(run_id: str) -> None:
             run.state = "RUNNING"
             run.started_at = datetime.now(timezone.utc)
             run.result_summary = {"platform": status_payload}
-            add_event(database, run_id, "started", "RIC、gNB、Broker 與三台 UE 已就緒")
+            ue_count = len(status_payload.get("components", {})) - 3
+            add_event(database, run_id, "started", f"RIC、gNB、Broker 與 {ue_count} 台 UE 已就緒")
         except Exception as exc:
             run.state = "START_FAILED"
             add_event(database, run_id, "start_failed", str(exc), severity="error")
@@ -1225,7 +1257,7 @@ def run_ue_config(run_id: str, ue: str, database: Session = Depends(get_db)):
     run = database.get(models.ExperimentRun, run_id)
     if not run:
         raise HTTPException(404, "run not found")
-    if ue not in {"ue1", "ue2", "ue3"} or not run.snapshot_path:
+    if not re.fullmatch(r"ue(?:[1-9]|10)", ue) or not run.snapshot_path:
         raise HTTPException(404, "UE config not found")
     snapshot = Path(run.snapshot_path).resolve()
     config_path = (snapshot / "configs" / f"{ue}.conf").resolve()

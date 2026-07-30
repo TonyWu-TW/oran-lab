@@ -14,7 +14,13 @@ import time
 from pathlib import Path
 
 
-UE_NAMES = tuple(item.strip() for item in os.environ.get("UE_NAMES", "ue1,ue2,ue3").split(",") if item.strip())
+UE_NAMES = tuple(
+    item.strip()
+    for item in os.environ.get(
+        "UE_NAMES", ",".join(f"ue{slot}" for slot in range(1, 11))
+    ).split(",")
+    if item.strip()
+)
 UE_IFACE = os.environ.get("UE_IFACE", "tun_srsue")
 PING_TARGET = os.environ.get("PING_TARGET", "10.45.0.1")
 LISTEN = os.environ.get("LISTEN", "127.0.0.1")
@@ -120,4 +126,3 @@ class Handler(http.server.BaseHTTPRequestHandler):
 if __name__ == "__main__":
     print(f"Multi-UE exporter listening on http://{LISTEN}:{PORT}/metrics for {','.join(UE_NAMES)}", flush=True)
     http.server.ThreadingHTTPServer((LISTEN, PORT), Handler).serve_forever()
-

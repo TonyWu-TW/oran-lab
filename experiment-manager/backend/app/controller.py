@@ -9,6 +9,7 @@ from typing import Any
 
 LAB_ROOT = Path(os.environ.get("ORAN_LAB_ROOT", "/home/zju/Desktop/oran-lab"))
 CONTROL = LAB_ROOT / "scripts" / "oranlabctl.py"
+UE_NAMES = {f"ue{slot}" for slot in range(1, 11)}
 
 
 class ControlError(RuntimeError):
@@ -33,7 +34,7 @@ def invoke(action: str, privileged: bool = False, timeout: int = 120) -> dict[st
 
 
 def recover_ue(ue: str, timeout: int = 90) -> dict[str, Any]:
-    if ue not in {"ue1", "ue2", "ue3"}:
+    if ue not in UE_NAMES:
         raise ValueError("unsupported UE")
     command = [str(CONTROL), "recover-ue", "--ue", ue, "--json"]
     if os.geteuid() != 0:

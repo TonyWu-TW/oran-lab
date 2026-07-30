@@ -38,9 +38,12 @@ def test_gnb_config_validation_rejects_broken_zmq_topology():
 
 
 def test_broker_generation_stages_equal_path_losses():
-    content = render_broker({1: 0.0, 2: 0.0, 3: 0.0})
+    losses = {slot: 0.0 for slot in range(1, 11)}
+    content = render_broker(losses)
     assert "UE admission stage" in content
-    assert "self.zmq_hwm = zmq_hwm = 10" in content
-    assert "blocks_throttle_1" in content
-    assert "tb.set_ue2_path_loss_db(200.0)" in content
-    assert "desired_path_losses[3] if requested_stage >= 3" in content
+    assert "ACTIVE_UE_SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]" in content
+    assert "CONFIGURED_PATH_LOSSES = {1: 0.0" in content
+    assert "ZMQ_HIGH_WATER_MARK = 10" in content
+    assert "ul_sum = blocks.add_vcc(1)" in content
+    assert "MUTED_PATH_LOSS_DB = 200.0" in content
+    assert "position <= stage" in content

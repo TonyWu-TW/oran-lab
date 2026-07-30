@@ -1,231 +1,152 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Headless GNU Radio ZMQ broker for one gNB and up to ten srsUEs.
 
-#
-# SPDX-License-Identifier: GPL-3.0
-#
-# GNU Radio Python Flow Graph
-# Title: srsRAN_multi_UE
-# GNU Radio version: 3.10.1.1
+The gNB downlink is copied to every active UE.  The active UE uplinks are
+attenuated independently and added into the single composite waveform received
+by the gNB.  UE admission is staged by the lifecycle controller so that
+identical simulated UEs do not attempt Random Access at the same instant.
+"""
 
-from packaging.version import Version as StrictVersion
+from __future__ import annotations
 
-if __name__ == '__main__':
-    import ctypes
-    import sys
-    if sys.platform.startswith('linux'):
-        try:
-            x11 = ctypes.cdll.LoadLibrary('libX11.so')
-            x11.XInitThreads()
-        except:
-            print("Warning: failed to XInitThreads()")
-
-from gnuradio import blocks
-from gnuradio import gr
-from gnuradio.filter import firdes
-from gnuradio.fft import window
-import sys
+import math
 import signal
-from PyQt5 import Qt
-from argparse import ArgumentParser
-from gnuradio.eng_arg import eng_float, intx
-from gnuradio import eng_notation
-from gnuradio import zeromq
-from gnuradio.qtgui import Range, RangeWidget
-from PyQt5 import QtCore
+import threading
+import time
+from pathlib import Path
+
+from gnuradio import blocks, gr, zeromq
 
 
+SAMPLE_RATE = 23_040_000
+ZMQ_TIMEOUT_MS = 100
+ZMQ_HIGH_WATER_MARK = 10
+MUTED_PATH_LOSS_DB = 200.0
+ADMISSION_STAGE_FILE = Path("/home/zju/Desktop/oran-lab/run/manager/ue-admission-stage")
 
-from gnuradio import qtgui
-
-class multi_ue_scenario(gr.top_block, Qt.QWidget):
-
-    def __init__(self):
-        gr.top_block.__init__(self, "srsRAN_multi_UE", catch_exceptions=True)
-        Qt.QWidget.__init__(self)
-        self.setWindowTitle("srsRAN_multi_UE")
-        qtgui.util.check_set_qss()
-        try:
-            self.setWindowIcon(Qt.QIcon.fromTheme('gnuradio-grc'))
-        except:
-            pass
-        self.top_scroll_layout = Qt.QVBoxLayout()
-        self.setLayout(self.top_scroll_layout)
-        self.top_scroll = Qt.QScrollArea()
-        self.top_scroll.setFrameStyle(Qt.QFrame.NoFrame)
-        self.top_scroll_layout.addWidget(self.top_scroll)
-        self.top_scroll.setWidgetResizable(True)
-        self.top_widget = Qt.QWidget()
-        self.top_scroll.setWidget(self.top_widget)
-        self.top_layout = Qt.QVBoxLayout(self.top_widget)
-        self.top_grid_layout = Qt.QGridLayout()
-        self.top_layout.addLayout(self.top_grid_layout)
-
-        self.settings = Qt.QSettings("GNU Radio", "multi_ue_scenario")
-
-        try:
-            if StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
-                self.restoreGeometry(self.settings.value("geometry").toByteArray())
-            else:
-                self.restoreGeometry(self.settings.value("geometry"))
-        except:
-            pass
-
-        ##################################################
-        # Variables
-        ##################################################
-        self.zmq_timeout = zmq_timeout = 100
-        self.zmq_hwm = zmq_hwm = 10
-        self.ue3_path_loss_db = ue3_path_loss_db = 20
-        self.ue2_path_loss_db = ue2_path_loss_db = 10
-        self.ue1_path_loss_db = ue1_path_loss_db = 0
-        self.slow_down_ratio = slow_down_ratio = 1
-        self.samp_rate = samp_rate = 23040000
-
-        ##################################################
-        # Blocks
-        ##################################################
-        self._ue3_path_loss_db_range = Range(0, 100, 1, 20, 200)
-        self._ue3_path_loss_db_win = RangeWidget(self._ue3_path_loss_db_range, self.set_ue3_path_loss_db, "UE3 Pathloss [dB]", "counter_slider", float, QtCore.Qt.Horizontal)
-        self.top_layout.addWidget(self._ue3_path_loss_db_win)
-        self._ue2_path_loss_db_range = Range(0, 100, 1, 10, 200)
-        self._ue2_path_loss_db_win = RangeWidget(self._ue2_path_loss_db_range, self.set_ue2_path_loss_db, "UE2 Pathloss [dB]", "counter_slider", float, QtCore.Qt.Horizontal)
-        self.top_layout.addWidget(self._ue2_path_loss_db_win)
-        self._ue1_path_loss_db_range = Range(0, 100, 1, 0, 200)
-        self._ue1_path_loss_db_win = RangeWidget(self._ue1_path_loss_db_range, self.set_ue1_path_loss_db, "UE1 Pathloss [dB]", "counter_slider", float, QtCore.Qt.Horizontal)
-        self.top_layout.addWidget(self._ue1_path_loss_db_win)
-        self._slow_down_ratio_range = Range(1, 32, 1, 1, 200)
-        self._slow_down_ratio_win = RangeWidget(self._slow_down_ratio_range, self.set_slow_down_ratio, "Time Slow Down Ratio", "counter_slider", float, QtCore.Qt.Horizontal)
-        self.top_layout.addWidget(self._slow_down_ratio_win)
-        self.zeromq_req_source_1_0 = zeromq.req_source(gr.sizeof_gr_complex, 1, 'tcp://127.0.0.1:2201', zmq_timeout, False, zmq_hwm)
-        self.zeromq_req_source_1 = zeromq.req_source(gr.sizeof_gr_complex, 1, 'tcp://127.0.0.1:2101', zmq_timeout, False, zmq_hwm)
-        self.zeromq_req_source_0_0 = zeromq.req_source(gr.sizeof_gr_complex, 1, 'tcp://127.0.0.1:2301', zmq_timeout, False, zmq_hwm)
-        self.zeromq_req_source_0 = zeromq.req_source(gr.sizeof_gr_complex, 1, 'tcp://127.0.0.1:2000', zmq_timeout, False, zmq_hwm)
-        self.zeromq_rep_sink_0_2 = zeromq.rep_sink(gr.sizeof_gr_complex, 1, 'tcp://127.0.0.1:2300', 100, False, zmq_hwm)
-        self.zeromq_rep_sink_0_1 = zeromq.rep_sink(gr.sizeof_gr_complex, 1, 'tcp://127.0.0.1:2001', zmq_timeout, False, zmq_hwm)
-        self.zeromq_rep_sink_0_0 = zeromq.rep_sink(gr.sizeof_gr_complex, 1, 'tcp://127.0.0.1:2200', zmq_timeout, False, zmq_hwm)
-        self.zeromq_rep_sink_0 = zeromq.rep_sink(gr.sizeof_gr_complex, 1, 'tcp://127.0.0.1:2100', zmq_timeout, False, zmq_hwm)
-        self.blocks_throttle_0 = blocks.throttle(gr.sizeof_gr_complex*1, 1.0*samp_rate/(1.0*slow_down_ratio),True)
-        self.blocks_throttle_1 = blocks.throttle(gr.sizeof_gr_complex*1, 1.0*samp_rate/(1.0*slow_down_ratio),True)
-        self.blocks_multiply_const_vxx_0_1_1 = blocks.multiply_const_cc(10**(-1.0*ue2_path_loss_db/20.0))
-        self.blocks_multiply_const_vxx_0_1_0 = blocks.multiply_const_cc(10**(-1.0*ue3_path_loss_db/20.0))
-        self.blocks_multiply_const_vxx_0_1 = blocks.multiply_const_cc(10**(-1.0*ue1_path_loss_db/20.0))
-        self.blocks_multiply_const_vxx_0_0_0 = blocks.multiply_const_cc(10**(-1.0*ue3_path_loss_db/20.0))
-        self.blocks_multiply_const_vxx_0_0 = blocks.multiply_const_cc(10**(-1.0*ue2_path_loss_db/20.0))
-        self.blocks_multiply_const_vxx_0 = blocks.multiply_const_cc(10**(-1.0*ue1_path_loss_db/20.0))
-        self.blocks_add_xx_0 = blocks.add_vcc(1)
+# These two assignments are replaced in immutable run snapshots.
+ACTIVE_UE_SLOTS = [1, 2, 3]
+CONFIGURED_PATH_LOSSES = {1: 0.0, 2: 10.0, 3: 20.0}
 
 
-        ##################################################
-        # Connections
-        ##################################################
-        self.connect((self.blocks_add_xx_0, 0), (self.blocks_throttle_1, 0))
-        self.connect((self.blocks_multiply_const_vxx_0, 0), (self.blocks_add_xx_0, 0))
-        self.connect((self.blocks_multiply_const_vxx_0_0, 0), (self.blocks_add_xx_0, 1))
-        self.connect((self.blocks_multiply_const_vxx_0_0_0, 0), (self.blocks_add_xx_0, 2))
-        self.connect((self.blocks_multiply_const_vxx_0_1, 0), (self.zeromq_rep_sink_0, 0))
-        self.connect((self.blocks_multiply_const_vxx_0_1_0, 0), (self.zeromq_rep_sink_0_2, 0))
-        self.connect((self.blocks_multiply_const_vxx_0_1_1, 0), (self.zeromq_rep_sink_0_0, 0))
-        self.connect((self.blocks_throttle_0, 0), (self.blocks_multiply_const_vxx_0_1, 0))
-        self.connect((self.blocks_throttle_0, 0), (self.blocks_multiply_const_vxx_0_1_0, 0))
-        self.connect((self.blocks_throttle_0, 0), (self.blocks_multiply_const_vxx_0_1_1, 0))
-        self.connect((self.blocks_throttle_1, 0), (self.zeromq_rep_sink_0_1, 0))
-        self.connect((self.zeromq_req_source_0, 0), (self.blocks_throttle_0, 0))
-        self.connect((self.zeromq_req_source_0_0, 0), (self.blocks_multiply_const_vxx_0_0_0, 0))
-        self.connect((self.zeromq_req_source_1, 0), (self.blocks_multiply_const_vxx_0, 0))
-        self.connect((self.zeromq_req_source_1_0, 0), (self.blocks_multiply_const_vxx_0_0, 0))
+def amplitude(path_loss_db: float) -> float:
+    return math.pow(10.0, -path_loss_db / 20.0)
 
 
-    def closeEvent(self, event):
-        self.settings = Qt.QSettings("GNU Radio", "multi_ue_scenario")
-        self.settings.setValue("geometry", self.saveGeometry())
-        self.stop()
-        self.wait()
-
-        event.accept()
-
-    def get_zmq_timeout(self):
-        return self.zmq_timeout
-
-    def set_zmq_timeout(self, zmq_timeout):
-        self.zmq_timeout = zmq_timeout
-
-    def get_zmq_hwm(self):
-        return self.zmq_hwm
-
-    def set_zmq_hwm(self, zmq_hwm):
-        self.zmq_hwm = zmq_hwm
-
-    def get_ue3_path_loss_db(self):
-        return self.ue3_path_loss_db
-
-    def set_ue3_path_loss_db(self, ue3_path_loss_db):
-        self.ue3_path_loss_db = ue3_path_loss_db
-        self.blocks_multiply_const_vxx_0_0_0.set_k(10**(-1.0*self.ue3_path_loss_db/20.0))
-        self.blocks_multiply_const_vxx_0_1_0.set_k(10**(-1.0*self.ue3_path_loss_db/20.0))
-
-    def get_ue2_path_loss_db(self):
-        return self.ue2_path_loss_db
-
-    def set_ue2_path_loss_db(self, ue2_path_loss_db):
-        self.ue2_path_loss_db = ue2_path_loss_db
-        self.blocks_multiply_const_vxx_0_0.set_k(10**(-1.0*self.ue2_path_loss_db/20.0))
-        self.blocks_multiply_const_vxx_0_1_1.set_k(10**(-1.0*self.ue2_path_loss_db/20.0))
-
-    def get_ue1_path_loss_db(self):
-        return self.ue1_path_loss_db
-
-    def set_ue1_path_loss_db(self, ue1_path_loss_db):
-        self.ue1_path_loss_db = ue1_path_loss_db
-        self.blocks_multiply_const_vxx_0.set_k(10**(-1.0*self.ue1_path_loss_db/20.0))
-        self.blocks_multiply_const_vxx_0_1.set_k(10**(-1.0*self.ue1_path_loss_db/20.0))
-
-    def get_slow_down_ratio(self):
-        return self.slow_down_ratio
-
-    def set_slow_down_ratio(self, slow_down_ratio):
-        self.slow_down_ratio = slow_down_ratio
-        self.blocks_throttle_0.set_sample_rate(1.0*self.samp_rate/(1.0*self.slow_down_ratio))
-        self.blocks_throttle_1.set_sample_rate(1.0*self.samp_rate/(1.0*self.slow_down_ratio))
-
-    def get_samp_rate(self):
-        return self.samp_rate
-
-    def set_samp_rate(self, samp_rate):
-        self.samp_rate = samp_rate
-        self.blocks_throttle_0.set_sample_rate(1.0*self.samp_rate/(1.0*self.slow_down_ratio))
-        self.blocks_throttle_1.set_sample_rate(1.0*self.samp_rate/(1.0*self.slow_down_ratio))
+def ue_base_port(slot: int) -> int:
+    # Port 3001 is Grafana in this lab, so UE10 uses the next free pair.
+    return 2000 + slot * 100 if slot < 10 else 3100
 
 
+class MultiUEBroker(gr.top_block):
+    def __init__(self, slots: list[int], path_losses: dict[int, float]):
+        super().__init__("O-RAN multi-UE ZMQ broker", catch_exceptions=True)
+        if not slots or len(slots) > 10 or len(set(slots)) != len(slots):
+            raise ValueError("broker requires 1 to 10 unique UE slots")
+        if any(slot < 1 or slot > 10 for slot in slots):
+            raise ValueError("UE slots must be in range 1..10")
+
+        self.slots = sorted(slots)
+        self.path_losses = {
+            slot: float(path_losses.get(slot, 0.0)) for slot in self.slots
+        }
+        self.admitted_stage = 0
+        self.ul_gains: dict[int, blocks.multiply_const_cc] = {}
+        self.dl_gains: dict[int, blocks.multiply_const_cc] = {}
+
+        gnb_dl_source = zeromq.req_source(
+            gr.sizeof_gr_complex,
+            1,
+            "tcp://127.0.0.1:2000",
+            ZMQ_TIMEOUT_MS,
+            False,
+            ZMQ_HIGH_WATER_MARK,
+        )
+        dl_throttle = blocks.throttle(
+            gr.sizeof_gr_complex, SAMPLE_RATE, True
+        )
+        ul_sum = blocks.add_vcc(1)
+        ul_throttle = blocks.throttle(
+            gr.sizeof_gr_complex, SAMPLE_RATE, True
+        )
+        gnb_ul_sink = zeromq.rep_sink(
+            gr.sizeof_gr_complex,
+            1,
+            "tcp://127.0.0.1:2001",
+            ZMQ_TIMEOUT_MS,
+            False,
+            ZMQ_HIGH_WATER_MARK,
+        )
+
+        self.connect(gnb_dl_source, dl_throttle)
+        self.connect(ul_sum, ul_throttle, gnb_ul_sink)
+
+        for input_index, slot in enumerate(self.slots):
+            base_port = ue_base_port(slot)
+            ue_ul_source = zeromq.req_source(
+                gr.sizeof_gr_complex,
+                1,
+                f"tcp://127.0.0.1:{base_port + 1}",
+                ZMQ_TIMEOUT_MS,
+                False,
+                ZMQ_HIGH_WATER_MARK,
+            )
+            ue_dl_sink = zeromq.rep_sink(
+                gr.sizeof_gr_complex,
+                1,
+                f"tcp://127.0.0.1:{base_port}",
+                ZMQ_TIMEOUT_MS,
+                False,
+                ZMQ_HIGH_WATER_MARK,
+            )
+            ul_gain = blocks.multiply_const_cc(amplitude(MUTED_PATH_LOSS_DB))
+            dl_gain = blocks.multiply_const_cc(amplitude(MUTED_PATH_LOSS_DB))
+            self.ul_gains[slot] = ul_gain
+            self.dl_gains[slot] = dl_gain
+
+            self.connect(ue_ul_source, ul_gain)
+            self.connect((ul_gain, 0), (ul_sum, input_index))
+            self.connect(dl_throttle, dl_gain, ue_dl_sink)
+
+    def set_admission_stage(self, stage: int) -> None:
+        stage = max(1, min(len(self.slots), stage))
+        if stage == self.admitted_stage:
+            return
+        for position, slot in enumerate(self.slots, 1):
+            loss = self.path_losses[slot] if position <= stage else MUTED_PATH_LOSS_DB
+            gain = amplitude(loss)
+            self.ul_gains[slot].set_k(gain)
+            self.dl_gains[slot].set_k(gain)
+        self.admitted_stage = stage
+        print(f"UE admission stage {stage}/{len(self.slots)}", flush=True)
 
 
-def main(top_block_cls=multi_ue_scenario, options=None):
+def requested_admission_stage(default: int = 1) -> int:
+    try:
+        return int(ADMISSION_STAGE_FILE.read_text().strip())
+    except (OSError, ValueError):
+        return default
 
-    if StrictVersion("4.5.0") <= StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
-        style = gr.prefs().get_string('qtgui', 'style', 'raster')
-        Qt.QApplication.setGraphicsSystem(style)
-    qapp = Qt.QApplication(sys.argv)
 
-    tb = top_block_cls()
+def main() -> None:
+    broker = MultiUEBroker(ACTIVE_UE_SLOTS, CONFIGURED_PATH_LOSSES)
+    stopping = threading.Event()
 
-    tb.start()
+    def request_stop(_: int, __: object) -> None:
+        stopping.set()
 
-    tb.show()
+    signal.signal(signal.SIGINT, request_stop)
+    signal.signal(signal.SIGTERM, request_stop)
+    broker.set_admission_stage(requested_admission_stage())
+    broker.start()
+    print(f"Broker ready for UE slots {ACTIVE_UE_SLOTS}", flush=True)
+    try:
+        while not stopping.wait(0.25):
+            broker.set_admission_stage(requested_admission_stage())
+    finally:
+        broker.stop()
+        broker.wait()
 
-    def sig_handler(sig=None, frame=None):
-        tb.stop()
-        tb.wait()
 
-        Qt.QApplication.quit()
-
-    signal.signal(signal.SIGINT, sig_handler)
-    signal.signal(signal.SIGTERM, sig_handler)
-
-    timer = Qt.QTimer()
-    timer.start(500)
-    timer.timeout.connect(lambda: None)
-
-    qapp.exec_()
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

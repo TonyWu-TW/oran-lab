@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
+import subprocess
 
 
 RUNNER_PATH = Path(__file__).resolve().parents[3] / "scripts" / "oranlab-traffic.py"
@@ -54,3 +56,29 @@ def test_dynamic_video_emits_offered_load_progress(monkeypatch, capsys):
     assert len(progress_lines) >= 2
     assert 0 < result["offered_bps_average"] <= 1_200_000
     assert result["successful_requests"] >= 2
+
+
+def test_udp_report_derives_receiver_rate_when_server_returns_zero():
+    report = {
+        "end": {"sum": {"bits_per_second": 1_000_000, "seconds": 10, "bytes": 1_250_000}},
+        "server_output_json": {
+            "end": {
+                "sum": {
+                    "bits_per_second": 0,
+                    "seconds": 10,
+                    "bytes": 1_250_000,
+                    "lost_percent": 20,
+                    "lost_packets": 20,
+                    "packets": 100,
+                }
+            }
+        },
+    }
+    completed = subprocess.CompletedProcess(["iperf3"], 0, "", "")
+    result = runner.parse_iperf_report(
+        completed,
+        json.dumps(report),
+        "",
+        {"transport": "udp", "direction": "UL"},
+    )
+    assert result["receiver_bps"] == 800_000

@@ -30,8 +30,8 @@ type ConfigView = {
 
 const componentNames: Record<string, string> = {
   'nearRT-RIC': 'Near-RT RIC', gnb: 'gNB', broker: 'Radio Broker',
-  ue1: 'UE 1', ue2: 'UE 2', ue3: 'UE 3',
 }
+const allUENames = Array.from({ length: 10 }, (_, index) => `ue${index + 1}`)
 
 function StateDot({ up }: { up: boolean }) {
   return <span className={`state-dot ${up ? 'up' : 'down'}`}><span /></span>
@@ -201,7 +201,7 @@ function App() {
 
       {error && <div className="alert"><X size={18} /><span>{error}</span><button onClick={() => setError('')}><X size={15} /></button></div>}
       {page === 'overview' && <Overview platform={platform} activeRun={activeRun} checks={checks} busy={busy} onPreflight={() => action('preflight', async () => setChecks((await api.preflight()).checks))} onNavigate={setPage} />}
-      {page === 'experiments' && <Experiments selected={selected} checks={checks} busy={busy} onValidate={() => selected && action('validate', async () => setChecks((await api.validate(selected.id)).checks))} onStart={() => selected && action('start', () => api.start(selected.id))} onUpdateUE={(ue, body) => selected && action(`ue-${ue.id}`, () => api.updateUE(selected.id, ue.id, body))} onViewConfig={(experimentId, ue) => void openConfig(experimentId, ue)} onViewGNBConfig={experimentId => void openGNBConfig(experimentId)} />}
+      {page === 'experiments' && <Experiments experiments={experiments} selectedId={selected?.id ?? ''} onSelect={setSelectedId} selected={selected} checks={checks} busy={busy} onValidate={() => selected && action('validate', async () => setChecks((await api.validate(selected.id)).checks))} onStart={() => selected && action('start', () => api.start(selected.id))} onUpdateUE={(ue, body) => selected && action(`ue-${ue.id}`, () => api.updateUE(selected.id, ue.id, body))} onViewConfig={(experimentId, ue) => void openConfig(experimentId, ue)} onViewGNBConfig={experimentId => void openGNBConfig(experimentId)} />}
       {page === 'live' && <Live platform={platform} activeRun={activeRun} latestRun={runs[0]} busy={busy} onStop={() => activeRun && action('stop', () => api.stop(activeRun.id))} onViewConfig={openRunConfig} />}
     </main>
     {configView && <div className="modal-backdrop" onMouseDown={() => setConfigView(null)}><section className="config-modal" onMouseDown={event => event.stopPropagation()}><div className="config-modal-head"><div><span className="eyebrow">EDITABLE CONFIG{configView.redacted ? ' · SECRETS REDACTED' : ' · YAML VALIDATED'}</span><h2>{configView.label.toUpperCase()} Config</h2><p>{configView.path}</p></div><button className="icon-button" onClick={() => setConfigView(null)}><X size={17} /></button></div><div className="config-warning">{configView.component === 'gnb' ? '直接修改 gNB YAML。後端會驗證 YAML、必要區段與受管 ZMQ endpoints；儲存後於下次啟動生效。' : '直接修改 srsUE config。儲存後會用於下次啟動；目前正在運行的 UE 不會即時重載。K、OPc、PIN 由後端保留。'}</div><textarea spellCheck={false} value={configView.content} onChange={event => setConfigView({ ...configView, content: event.target.value })} /><div className="config-modal-actions"><span>{configNotice}</span><button className="secondary" onClick={() => setConfigView(null)}>取消</button><button className="primary" disabled={busy === 'save-config'} onClick={() => void saveConfig()}>{busy === 'save-config' ? '儲存中…' : '儲存 Config'}</button></div></section></div>}
@@ -225,7 +225,7 @@ function Overview({ platform, activeRun, checks, busy, onPreflight, onNavigate }
 
     <div className="section-title"><div><h3>Radio Stack</h3><p>目前受 Experiment Manager 管理的元件</p></div></div>
     <section className="topology">
-      {['nearRT-RIC', 'gnb', 'broker', 'ue1', 'ue2', 'ue3'].map(name => <div className="topology-item" key={name}><div className="node"><StateDot up={!!platform?.components[name]?.running} /><span>{componentNames[name]}</span><small>{platform?.components[name]?.running ? `PID ${platform.components[name].pid}` : 'stopped'}</small></div></div>)}
+      {['nearRT-RIC', 'gnb', 'broker', ...allUENames].map(name => <div className="topology-item" key={name}><div className="node"><StateDot up={!!platform?.components[name]?.running} /><span>{componentNames[name] ?? name.toUpperCase()}</span><small>{platform?.components[name]?.running ? `PID ${platform.components[name].pid}` : 'stopped'}</small></div></div>)}
     </section>
     {checks && <CheckPanel checks={checks} />}
   </div>
@@ -236,7 +236,7 @@ function CheckPanel({ checks }: { checks: CheckType[] }) {
   return <section className="panel checks"><div className="panel-head"><div><h3>檢查結果</h3><p>{passed} / {checks.length} 通過</p></div><Pill up={passed === checks.length}>{passed === checks.length ? '可啟動' : '需要處理'}</Pill></div><div className="check-list">{checks.map(item => <div key={item.id}><span className={item.status}><Check size={14} /></span><b>{item.id}</b><small>{item.message}</small></div>)}</div></section>
 }
 
-function Experiments({ selected, checks, busy, onValidate, onStart, onUpdateUE, onViewConfig, onViewGNBConfig }: { selected?: Experiment; checks: CheckType[] | null; busy: string; onValidate: () => void; onStart: () => void; onUpdateUE: (ue: UE, body: Partial<UE>) => void; onViewConfig: (experimentId: string, ue: UE) => void; onViewGNBConfig: (experimentId: string) => void }) {
+function Experiments({ experiments, selectedId, onSelect, selected, checks, busy, onValidate, onStart, onUpdateUE, onViewConfig, onViewGNBConfig }: { experiments: Experiment[]; selectedId: string; onSelect: (id: string) => void; selected?: Experiment; checks: CheckType[] | null; busy: string; onValidate: () => void; onStart: () => void; onUpdateUE: (ue: UE, body: Partial<UE>) => void; onViewConfig: (experimentId: string, ue: UE) => void; onViewGNBConfig: (experimentId: string) => void }) {
   const [editing, setEditing] = useState<string>('')
   const totalOfferedLoad = selected?.ues.reduce((total, ue) => {
     const flow = trafficFlowOf(ue.traffic_defaults)
@@ -248,7 +248,7 @@ function Experiments({ selected, checks, busy, onValidate, onStart, onUpdateUE, 
   return <div className="content experiment-workspace">
     <div className="editor-stack">
       {selected ? <>
-        <section className="panel definition"><div className="panel-head"><div><span className="eyebrow">REVISION {selected.revision}</span><h2>{selected.name}</h2><p>{selected.description}</p></div><Pill up={selected.monitoring_enabled}>監控啟用</Pill></div><div className="definition-grid"><div><span>預期 UE</span><b>{selected.expected_ue_count}</b></div><div><span>總 Target Offered Load</span><b>{totalOfferedLoad.toFixed(2)} Mbps</b></div><div><span>Scenario</span><b>{selected.scenario}</b></div><div><span>拓撲</span><b>FDD · ZMQ</b></div></div><div className="button-row"><button className="secondary" disabled={!!busy} onClick={() => onViewGNBConfig(selected.id)}><FileText />gNB Config</button><button className="secondary" disabled={!!busy} onClick={onValidate}><ShieldCheck />驗證設定</button><button className="primary" disabled={!!busy} onClick={onStart}><Play />{busy === 'start' ? '啟動中…' : '啟動實驗'}</button></div></section>
+        <section className="panel definition"><div className="panel-head"><div><span className="eyebrow">REVISION {selected.revision}</span><h2>{selected.name}</h2><p>{selected.description}</p></div><div><select aria-label="選擇實驗" value={selectedId} disabled={!!busy} onChange={event => onSelect(event.target.value)}>{experiments.map(experiment => <option key={experiment.id} value={experiment.id}>{experiment.name} · {experiment.expected_ue_count} UE</option>)}</select><Pill up={selected.monitoring_enabled}>監控啟用</Pill></div></div><div className="definition-grid"><div><span>預期 UE</span><b>{selected.expected_ue_count}</b></div><div><span>總 Target Offered Load</span><b>{totalOfferedLoad.toFixed(2)} Mbps</b></div><div><span>Scenario</span><b>{selected.scenario}</b></div><div><span>拓撲</span><b>FDD · ZMQ</b></div></div><div className="button-row"><button className="secondary" disabled={!!busy} onClick={() => onViewGNBConfig(selected.id)}><FileText />gNB Config</button><button className="secondary" disabled={!!busy} onClick={onValidate}><ShieldCheck />驗證設定</button><button className="primary" disabled={!!busy} onClick={onStart}><Play />{busy === 'start' ? '啟動中…' : '啟動實驗'}</button></div></section>
         <div className="section-title"><div><h3>UE 與 Channel</h3><p>敏感 SIM credentials 不會顯示；channel 變更在下次啟動套用</p></div></div>
         {selected.ues.map(ue => <UECard key={ue.id} ue={ue} experimentId={selected.id} open={editing === ue.id} setOpen={() => setEditing(editing === ue.id ? '' : ue.id)} saving={busy === `ue-${ue.id}`} onSave={body => onUpdateUE(ue, body)} onViewConfig={onViewConfig} />)}
         {checks && <CheckPanel checks={checks} />}
@@ -478,12 +478,12 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
   const [voiceGuardMode, setVoiceGuardMode] = useState<'observe_only' | 'closed_loop'>('closed_loop')
   const [voiceGuardPolicy, setVoiceGuardPolicy] = useState({ videoScale: 60, threshold: 1.2 })
   const [radioMetrics, setRadioMetrics] = useState<Record<string, { rx: number; tx: number; latency: number; loss: number }>>({})
-  const [throughputHistory, setThroughputHistory] = useState<Record<string, number[]>>({ ue1: [], ue2: [], ue3: [] })
-  const [offeredHistory, setOfferedHistory] = useState<Record<string, number[]>>({ ue1: [], ue2: [], ue3: [] })
+  const [throughputHistory, setThroughputHistory] = useState<Record<string, number[]>>({})
+  const [offeredHistory, setOfferedHistory] = useState<Record<string, number[]>>({})
   const [voiceHistory, setVoiceHistory] = useState<VoiceHistory>({ offered: [], received: [], delivery: [], loss: [], jitter: [], rtt: [], states: [] })
   useEffect(() => {
-    setThroughputHistory({ ue1: [], ue2: [], ue3: [] })
-    setOfferedHistory({ ue1: [], ue2: [], ue3: [] })
+    setThroughputHistory({})
+    setOfferedHistory({})
     setVoiceHistory({ offered: [], received: [], delivery: [], loss: [], jitter: [], rtt: [], states: [] })
   }, [run?.id])
   const activeJobs = useMemo(() => jobs.filter(job => ['QUEUED', 'RUNNING', 'STOP_REQUESTED'].includes(job.status)), [jobs])
@@ -497,7 +497,8 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
         api.voiceGuard(run.id).catch(() => null),
       ])
       setJobs(nextJobs); setConfiguredUEs(configuration.ues); setVoiceGuard(nextVoiceGuard)
-      setOfferedHistory(previous => Object.fromEntries(['ue1','ue2','ue3'].map(ue => {
+      const ueNames = configuration.ues.map(item => item.ue)
+      setOfferedHistory(previous => Object.fromEntries(ueNames.map(ue => {
         const job = nextJobs.find(item => item.ue === ue && ['QUEUED', 'RUNNING', 'STOP_REQUESTED'].includes(item.status))
         const progress = trafficProgress(job)
         const configured = configuration.ues.find(item => item.ue === ue)?.traffic.flows[0]
@@ -526,11 +527,12 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
       const names = ['ue_rx_bps', 'ue_tx_bps', 'ue_ping_latency', 'ue_ping_loss']
       const responses = await Promise.all(names.map(name => api.metric(activeRun.id, name)))
       const mapped = responses.map(response => Object.fromEntries(response.data.result.map(item => [item.metric.ue ?? '', Number(item.value[1])])))
-      const next = Object.fromEntries(['ue1','ue2','ue3'].map(ue => [ue, { rx: mapped[0][ue] ?? 0, tx: mapped[1][ue] ?? 0, latency: mapped[2][ue] ?? -1, loss: mapped[3][ue] ?? 100 }]))
+      const ueNames = configuredUEs.map(item => item.ue)
+      const next = Object.fromEntries(ueNames.map(ue => [ue, { rx: mapped[0][ue] ?? 0, tx: mapped[1][ue] ?? 0, latency: mapped[2][ue] ?? -1, loss: mapped[3][ue] ?? 100 }]))
       setRadioMetrics(next)
-      setThroughputHistory(previous => Object.fromEntries(['ue1','ue2','ue3'].map(ue => [ue, [...(previous[ue] ?? []), next[ue].rx + next[ue].tx].slice(-40)])))
+      setThroughputHistory(previous => Object.fromEntries(ueNames.map(ue => [ue, [...(previous[ue] ?? []), next[ue].rx + next[ue].tx].slice(-40)])))
     } catch { /* Prometheus may be between scrapes */ }
-  }, [activeRun?.id])
+  }, [activeRun?.id, configuredUEs])
   useEffect(() => { void refreshMetrics(); const timer = window.setInterval(() => void refreshMetrics(), 2000); return () => window.clearInterval(timer) }, [refreshMetrics])
   async function startTraffic(target: string) {
     if (!activeRun) return
@@ -573,7 +575,7 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
   }
   return <div className="content">
     <section className="run-header"><div><div className="hero-kicker"><Activity size={14} /> LIVE EXPERIMENT</div><h2>{run ? `Run ${run.id.slice(0, 8)}` : '目前沒有執行紀錄'}</h2><p>{run ? `開始時間 ${uptime} · revision ${run.experiment_revision}` : '請從實驗設定頁選擇 baseline 並啟動。'}</p></div><div className="run-actions"><span className={`run-state ${run?.state?.toLowerCase()}`}>{run?.state ?? 'IDLE'}</span>{activeRun && <button className="danger" disabled={!!busy} onClick={onStop}><CircleStop />停止實驗</button>}</div></section>
-    <section className="metric-grid"><Metric label="Radio Stack" value={platform?.state ?? '—'} hint={`${Object.values(platform?.components ?? {}).filter(item => item.running).length} components`} icon={<Radio />} /><Metric label="UE Attached" value={`${configuredUEs.filter(item => platform?.components[item.ue]?.running).length} / ${configuredUEs.length || 3}`} hint="PDU sessions" icon={<Wifi />} /><Metric label="ZMQ Endpoints" value={`${Object.values(platform?.ports ?? {}).filter(Boolean).length} / 8`} hint="gNB 2 + 3 UE × 2" icon={<Network />} /><Metric label="Monitoring" value={platform?.prometheus ? 'ONLINE' : 'OFFLINE'} hint="Prometheus :9095" icon={<Activity />} /></section>
+    <section className="metric-grid"><Metric label="Radio Stack" value={platform?.state ?? '—'} hint={`${Object.values(platform?.components ?? {}).filter(item => item.running).length} components`} icon={<Radio />} /><Metric label="UE Attached" value={`${configuredUEs.filter(item => platform?.components[item.ue]?.running).length} / ${configuredUEs.length || 0}`} hint="PDU sessions" icon={<Wifi />} /><Metric label="ZMQ Endpoints" value={`${Object.values(platform?.ports ?? {}).filter(Boolean).length} / ${2 + configuredUEs.length * 2}`} hint={`gNB 2 + ${configuredUEs.length} UE × 2`} icon={<Network />} /><Metric label="Monitoring" value={platform?.prometheus ? 'ONLINE' : 'OFFLINE'} hint="Prometheus :9095" icon={<Activity />} /></section>
     <VoiceGuardPanel status={voiceGuard} activeRun={!!activeRun} busy={trafficBusy === 'voiceguard'} mode={voiceGuardMode} policy={voiceGuardPolicy} onMode={setVoiceGuardMode} onPolicy={setVoiceGuardPolicy} onToggle={() => void toggleVoiceGuard()} />
     <section className="panel traffic-panel"><div className="panel-head"><div><h3>UE Traffic Controller</h3><p>流量設定來自這次 Run 的 Experiment snapshot；可單獨執行或同時啟動全部 UE</p></div><div className="traffic-batch-actions"><button className="secondary small" disabled={!activeRun || !activeJobs.length || !!trafficBusy} onClick={() => void stopTraffic('all')}><CircleStop />停止全部</button><button className="primary small" disabled={!activeRun || !!trafficBusy || activeTrafficUEs.size > 0} onClick={() => void startTraffic('all')}><Zap />{trafficBusy === 'all' ? '啟動中…' : '執行全部'}</button></div></div>
       <TrafficPlanTable configuredUEs={configuredUEs} jobs={jobs} activeRun={!!activeRun} busy={trafficBusy} onStart={ue => void startTraffic(ue)} onStop={ue => void stopTraffic(ue)} />
@@ -581,7 +583,7 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
       <div className="traffic-results-title"><b>執行結果</b><span>{jobs.length} 筆紀錄</span></div>
       <TrafficTable jobs={jobs} />
     </section>
-    <section className="panel chart-panel"><div className="panel-head"><div><h3>Offered Load vs Delivered Throughput</h3><p>虛線是流量產生器需求量；實線是 Prometheus 實際 RX + TX，兩者分開才能看出資源競爭</p></div><div className="config-shortcuts">{['ue1','ue2','ue3'].map(ue => <button key={ue} onClick={() => onViewConfig(run, ue)}><FileText />{ue.toUpperCase()} Config</button>)}<a href={`${window.location.protocol}//${window.location.hostname}:3001`} target="_blank">Grafana <ChevronRight size={14} /></a></div></div><ThroughputChart history={throughputHistory} offeredHistory={offeredHistory} metrics={radioMetrics} /></section>
+    <section className="panel chart-panel"><div className="panel-head"><div><h3>Offered Load vs Delivered Throughput</h3><p>虛線是流量產生器需求量；實線是 Prometheus 實際 RX + TX，兩者分開才能看出資源競爭</p></div><div className="config-shortcuts">{configuredUEs.map(item => item.ue).map(ue => <button key={ue} onClick={() => onViewConfig(run, ue)}><FileText />{ue.toUpperCase()} Config</button>)}<a href={`${window.location.protocol}//${window.location.hostname}:3001`} target="_blank">Grafana <ChevronRight size={14} /></a></div></div><ThroughputChart ues={configuredUEs.map(item => item.ue)} history={throughputHistory} offeredHistory={offeredHistory} metrics={radioMetrics} /></section>
     <section className="panel voice-quality-panel"><div className="panel-head"><div><h3>UE3 Voice Quality</h3><p>RTP-like 最近 3 秒 rolling · Offered/Received、loss、jitter 與 RTT P95</p></div><span className={`xapp-state ${voiceGuard?.state?.toLowerCase() ?? 'off'}`}>{voiceGuard?.state ?? 'XAPP OFF'}</span></div><VoiceQualityChart history={voiceHistory} voiceGuard={voiceGuard} /></section>
   </div>
 }
@@ -647,11 +649,12 @@ function TrafficPlanTable({ configuredUEs, jobs, activeRun, busy, onStart, onSto
   </div>
 }
 
-function ThroughputChart({ history, offeredHistory, metrics }: { history: Record<string, number[]>; offeredHistory: Record<string, number[]>; metrics: Record<string, { rx: number; tx: number; latency: number; loss: number }> }) {
-  const colors: Record<string, string> = { ue1: '#60e3a4', ue2: '#69a7ff', ue3: '#edc46b' }
+function ThroughputChart({ ues, history, offeredHistory, metrics }: { ues: string[]; history: Record<string, number[]>; offeredHistory: Record<string, number[]>; metrics: Record<string, { rx: number; tx: number; latency: number; loss: number }> }) {
+  const palette = ['#60e3a4', '#69a7ff', '#edc46b', '#ff8077', '#b78cff', '#55d7e8', '#f49d5b', '#9bd36a', '#f078b8', '#aab7c4']
+  const colors = Object.fromEntries(ues.map((ue, index) => [ue, palette[index % palette.length]]))
   const maximum = Math.max(1, ...Object.values(history).flat(), ...Object.values(offeredHistory).flat())
   const points = (values: number[]) => values.map((value, index) => `${(index / 39) * 100},${50 - (value / maximum) * 46}`).join(' ')
-  return <div className="real-chart"><div className="chart-legend">{['ue1','ue2','ue3'].map(ue => <div key={ue}><i style={{ background: colors[ue] }} /><b>{ue.toUpperCase()}</b><span>{(((metrics[ue]?.rx ?? 0) + (metrics[ue]?.tx ?? 0)) / 1e6).toFixed(2)} Mbps</span><small>Offered {((offeredHistory[ue]?.at(-1) ?? 0) / 1e6).toFixed(2)} Mbps · {metrics[ue]?.latency >= 0 ? `${metrics[ue].latency.toFixed(1)} ms · ${metrics[ue].loss.toFixed(0)}% loss` : '等待 UE'}</small></div>)}</div><svg viewBox="0 0 100 52" preserveAspectRatio="none"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,.05)" strokeWidth=".25" /></pattern></defs><rect width="100" height="52" fill="url(#grid)" />{['ue1','ue2','ue3'].map(ue => <polyline key={`offered-${ue}`} points={points(offeredHistory[ue] ?? [])} fill="none" stroke={colors[ue]} strokeOpacity=".5" strokeDasharray="2 1.5" strokeWidth=".45" vectorEffect="non-scaling-stroke" />)}{['ue1','ue2','ue3'].map(ue => <polyline key={ue} points={points(history[ue] ?? [])} fill="none" stroke={colors[ue]} strokeWidth=".65" vectorEffect="non-scaling-stroke" />)}</svg></div>
+  return <div className="real-chart"><div className="chart-legend">{ues.map(ue => <div key={ue}><i style={{ background: colors[ue] }} /><b>{ue.toUpperCase()}</b><span>{(((metrics[ue]?.rx ?? 0) + (metrics[ue]?.tx ?? 0)) / 1e6).toFixed(2)} Mbps</span><small>Offered {((offeredHistory[ue]?.at(-1) ?? 0) / 1e6).toFixed(2)} Mbps · {metrics[ue]?.latency >= 0 ? `${metrics[ue].latency.toFixed(1)} ms · ${metrics[ue].loss.toFixed(0)}% loss` : '等待 UE'}</small></div>)}</div><svg viewBox="0 0 100 52" preserveAspectRatio="none"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,.05)" strokeWidth=".25" /></pattern></defs><rect width="100" height="52" fill="url(#grid)" />{ues.map(ue => <polyline key={`offered-${ue}`} points={points(offeredHistory[ue] ?? [])} fill="none" stroke={colors[ue]} strokeOpacity=".5" strokeDasharray="2 1.5" strokeWidth=".45" vectorEffect="non-scaling-stroke" />)}{ues.map(ue => <polyline key={ue} points={points(history[ue] ?? [])} fill="none" stroke={colors[ue]} strokeWidth=".65" vectorEffect="non-scaling-stroke" />)}</svg></div>
 }
 
 function VoiceQualityChart({ history, voiceGuard }: { history: VoiceHistory; voiceGuard: VoiceGuardStatus | null }) {
