@@ -31,7 +31,6 @@ type ConfigView = {
 const componentNames: Record<string, string> = {
   'nearRT-RIC': 'Near-RT RIC', gnb: 'gNB', broker: 'Radio Broker',
 }
-const allUENames = Array.from({ length: 10 }, (_, index) => `ue${index + 1}`)
 
 function StateDot({ up }: { up: boolean }) {
   return <span className={`state-dot ${up ? 'up' : 'down'}`}><span /></span>
@@ -132,6 +131,7 @@ function App() {
 
   const selected = experiments.find(item => item.id === selectedId) ?? experiments[0]
   const activeRun = runs.find(run => ['STARTING', 'RUNNING', 'STOPPING', 'DEGRADED'].includes(run.state))
+  const activeExperiment = experiments.find(experiment => experiment.id === activeRun?.experiment_id)
 
   async function action(name: string, job: () => Promise<unknown>) {
     setBusy(name); setError('')
@@ -203,7 +203,7 @@ function App() {
       </header>
 
       {error && <div className="alert"><X size={18} /><span>{error}</span><button onClick={() => setError('')}><X size={15} /></button></div>}
-      {page === 'overview' && <Overview platform={platform} activeRun={activeRun} checks={checks} busy={busy} onPreflight={() => action('preflight', async () => setChecks((await api.preflight()).checks))} onNavigate={setPage} />}
+      {page === 'overview' && <Overview platform={platform} activeRun={activeRun} ueCount={activeExperiment?.expected_ue_count ?? 3} checks={checks} busy={busy} onPreflight={() => action('preflight', async () => setChecks((await api.preflight()).checks))} onNavigate={setPage} />}
       {page === 'experiments' && <Experiments experiments={experiments} selectedId={selected?.id ?? ''} onSelect={setSelectedId} selected={selected} checks={checks} busy={busy} onValidate={() => selected && action('validate', async () => setChecks((await api.validate(selected.id)).checks))} onStart={() => selected && action('start', () => api.start(selected.id))} onUpdateUE={(ue, body) => selected && action(`ue-${ue.id}`, () => api.updateUE(selected.id, ue.id, body))} onBatchUpdate={(ues, buildBody) => selected && action('ue-batch', () => Promise.all(ues.map(ue => api.updateUE(selected.id, ue.id, buildBody(ue)))))} onViewConfig={(experimentId, ue) => void openConfig(experimentId, ue)} onViewGNBConfig={experimentId => void openGNBConfig(experimentId)} />}
       {page === 'live' && <Live platform={platform} activeRun={activeRun} latestRun={runs[0]} busy={busy} onStop={() => activeRun && action('stop', () => api.stop(activeRun.id))} onViewConfig={openRunConfig} />}
     </main>
@@ -211,7 +211,7 @@ function App() {
   </div>
 }
 
-function Overview({ platform, activeRun, checks, busy, onPreflight, onNavigate }: { platform: Platform | null; activeRun?: Run; checks: CheckType[] | null; busy: string; onPreflight: () => void; onNavigate: (page: Page) => void }) {
+function Overview({ platform, activeRun, ueCount, checks, busy, onPreflight, onNavigate }: { platform: Platform | null; activeRun?: Run; ueCount: number; checks: CheckType[] | null; busy: string; onPreflight: () => void; onNavigate: (page: Page) => void }) {
   const services = [
     ['Open5GS Core', !!platform && Object.values(platform.services).every(Boolean), Server],
     ['MongoDB', !!platform?.mongodb, Database], ['Prometheus', !!platform?.prometheus, Activity],
@@ -228,7 +228,7 @@ function Overview({ platform, activeRun, checks, busy, onPreflight, onNavigate }
 
     <div className="section-title"><div><h3>Radio Stack</h3><p>目前受 Experiment Manager 管理的元件</p></div></div>
     <section className="topology">
-      {['nearRT-RIC', 'gnb', 'broker', ...allUENames].map(name => <div className="topology-item" key={name}><div className="node"><StateDot up={!!platform?.components[name]?.running} /><span>{componentNames[name] ?? name.toUpperCase()}</span><small>{platform?.components[name]?.running ? `PID ${platform.components[name].pid}` : 'stopped'}</small></div></div>)}
+      {['nearRT-RIC', 'gnb', 'broker', ...Array.from({ length: ueCount }, (_, index) => `ue${index + 1}`)].map(name => <div className="topology-item" key={name}><div className="node"><StateDot up={!!platform?.components[name]?.running} /><span>{componentNames[name] ?? name.toUpperCase()}</span><small>{platform?.components[name]?.running ? `PID ${platform.components[name].pid}` : 'stopped'}</small></div></div>)}
     </section>
     {checks && <CheckPanel checks={checks} />}
   </div>
@@ -620,6 +620,11 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
   }, [run?.id])
   const activeJobs = useMemo(() => jobs.filter(job => ['QUEUED', 'RUNNING', 'STOP_REQUESTED'].includes(job.status)), [jobs])
   const activeTrafficUEs = useMemo(() => new Set(activeJobs.map(job => job.ue)), [activeJobs])
+  const rfScenario = configuredUEs.some(item => ['ue9', 'ue10'].includes(item.ue))
+  const voiceUENames = rfScenario ? ['ue9', 'ue10'] : ['ue3']
+  useEffect(() => {
+    if (configuredUEs.length) setVoiceGuardAlgorithm(rfScenario ? 'random_forest' : 'rules')
+  }, [run?.id, configuredUEs.length, rfScenario])
   const refreshTraffic = useCallback(async () => {
     if (!run) { setJobs([]); setConfiguredUEs([]); return }
     try {
@@ -639,7 +644,9 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
           : configured?.type === 'rtp_voice' ? Number(configured.params.bitrate_kbps ?? 0) * 1000 : 0
         return [ue, [...(previous[ue] ?? []), Number(progress.offered_bps ?? (job ? fallback : 0))].slice(-40)]
       })))
-      const voiceJobs = nextJobs.filter(item => ['ue9', 'ue10'].includes(item.ue) && item.traffic_type === 'rtp_voice' && ['QUEUED', 'RUNNING', 'STOP_REQUESTED'].includes(item.status))
+      const nextRfScenario = configuration.ues.some(item => ['ue9', 'ue10'].includes(item.ue))
+      const voiceTargets = nextRfScenario ? ['ue9', 'ue10'] : ['ue3']
+      const voiceJobs = nextJobs.filter(item => voiceTargets.includes(item.ue) && item.traffic_type === 'rtp_voice' && ['QUEUED', 'RUNNING', 'STOP_REQUESTED'].includes(item.status))
       const voiceProgresses = voiceJobs.map(trafficProgress)
       const minimum = (key: string, fallback = 0) => voiceProgresses.length ? Math.min(...voiceProgresses.map(item => Number(item[key] ?? fallback))) : fallback
       const maximum = (keys: string[], fallback = 0) => voiceProgresses.length ? Math.max(...voiceProgresses.map(item => Number(keys.map(key => item[key]).find(value => value != null) ?? fallback))) : fallback
@@ -711,7 +718,7 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
   return <div className="content">
     <section className="run-header"><div><div className="hero-kicker"><Activity size={14} /> LIVE EXPERIMENT</div><h2>{run ? `Run ${run.id.slice(0, 8)}` : '目前沒有執行紀錄'}</h2><p>{run ? `開始時間 ${uptime} · revision ${run.experiment_revision}` : '請從實驗設定頁選擇 baseline 並啟動。'}</p></div><div className="run-actions"><span className={`run-state ${run?.state?.toLowerCase()}`}>{run?.state ?? 'IDLE'}</span>{activeRun && <button className="danger" disabled={!!busy} onClick={onStop}><CircleStop />停止實驗</button>}</div></section>
     <section className="metric-grid"><Metric label="Radio Stack" value={platform?.state ?? '—'} hint={`${Object.values(platform?.components ?? {}).filter(item => item.running).length} components`} icon={<Radio />} /><Metric label="UE Attached" value={`${configuredUEs.filter(item => platform?.components[item.ue]?.running).length} / ${configuredUEs.length || 0}`} hint="PDU sessions" icon={<Wifi />} /><Metric label="ZMQ Endpoints" value={`${Object.values(platform?.ports ?? {}).filter(Boolean).length} / ${2 + configuredUEs.length * 2}`} hint={`gNB 2 + ${configuredUEs.length} UE × 2`} icon={<Network />} /><Metric label="Monitoring" value={platform?.prometheus ? 'ONLINE' : 'OFFLINE'} hint="Prometheus :9095" icon={<Activity />} /></section>
-    <VoiceGuardPanel status={voiceGuard} activeRun={!!activeRun} busy={trafficBusy === 'voiceguard'} mode={voiceGuardMode} algorithm={voiceGuardAlgorithm} policy={voiceGuardPolicy} onMode={setVoiceGuardMode} onAlgorithm={setVoiceGuardAlgorithm} onToggle={() => void toggleVoiceGuard()} />
+    <VoiceGuardPanel status={voiceGuard} activeRun={!!activeRun} rfScenario={rfScenario} busy={trafficBusy === 'voiceguard'} mode={voiceGuardMode} algorithm={voiceGuardAlgorithm} policy={voiceGuardPolicy} onMode={setVoiceGuardMode} onAlgorithm={setVoiceGuardAlgorithm} onToggle={() => void toggleVoiceGuard()} />
     <section className="panel traffic-panel"><div className="panel-head"><div><h3>UE Traffic Controller</h3><p>流量設定來自這次 Run 的 Experiment snapshot；可單獨執行或同時啟動全部 UE</p></div><div className="traffic-batch-actions"><button className="secondary small" disabled={!activeRun || !activeJobs.length || !!trafficBusy} onClick={() => void stopTraffic('all')}><CircleStop />停止全部</button><button className="primary small" disabled={!activeRun || !!trafficBusy || activeTrafficUEs.size > 0} onClick={() => void startTraffic('all')}><Zap />{trafficBusy === 'all' ? '啟動中…' : '執行全部'}</button></div></div>
       <TrafficPlanTable configuredUEs={configuredUEs} jobs={jobs} activeRun={!!activeRun} busy={trafficBusy} onStart={ue => void startTraffic(ue)} onStop={ue => void stopTraffic(ue)} />
       {trafficError && <div className="traffic-error">{trafficError}</div>}
@@ -719,13 +726,14 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
       <TrafficTable jobs={jobs} />
     </section>
     <section className="panel chart-panel"><div className="panel-head"><div><h3>Offered Load vs Delivered Throughput</h3><p>虛線是流量產生器需求量；實線是 Prometheus 實際 RX + TX，兩者分開才能看出資源競爭</p></div><div className="config-shortcuts">{configuredUEs.map(item => item.ue).map(ue => <button key={ue} onClick={() => onViewConfig(run, ue)}><FileText />{ue.toUpperCase()} Config</button>)}<a href={`${window.location.protocol}//${window.location.hostname}:3001`} target="_blank">Grafana <ChevronRight size={14} /></a></div></div><ThroughputChart ues={configuredUEs.map(item => item.ue)} history={throughputHistory} offeredHistory={offeredHistory} metrics={radioMetrics} /></section>
-    <section className="panel voice-quality-panel"><div className="panel-head"><div><h3>UE9 / UE10 Voice Quality</h3><p>取目前通話 UE 的最差值 · RTP-like 最近 3 秒 rolling</p></div><span className={`xapp-state ${voiceGuard?.state?.toLowerCase() ?? 'off'}`}>{voiceGuard?.state ?? 'XAPP OFF'}</span></div><VoiceQualityChart history={voiceHistory} voiceGuard={voiceGuard} /></section>
+    <section className="panel voice-quality-panel"><div className="panel-head"><div><h3>{voiceUENames.map(ue => ue.toUpperCase()).join(' / ')} Voice Quality</h3><p>取目前通話 UE 的最差值 · RTP-like 最近 3 秒 rolling</p></div><span className={`xapp-state ${voiceGuard?.state?.toLowerCase() ?? 'off'}`}>{voiceGuard?.state ?? 'XAPP OFF'}</span></div><VoiceQualityChart history={voiceHistory} voiceGuard={voiceGuard} ueCount={configuredUEs.length || 3} /></section>
   </div>
 }
 
-function VoiceGuardPanel({ status, activeRun, busy, mode, algorithm, policy, onMode, onAlgorithm, onToggle }: {
+function VoiceGuardPanel({ status, activeRun, rfScenario, busy, mode, algorithm, policy, onMode, onAlgorithm, onToggle }: {
   status: VoiceGuardStatus | null
   activeRun: boolean
+  rfScenario: boolean
   busy: boolean
   mode: 'observe_only' | 'closed_loop'
   algorithm: 'rules' | 'random_forest'
@@ -740,20 +748,20 @@ function VoiceGuardPanel({ status, activeRun, busy, mode, algorithm, policy, onM
   const lastEvent = status?.events?.at(-1)
   return <section className={`panel voiceguard-panel ${status?.state?.toLowerCase() ?? 'off'}`}>
     <div className="panel-head">
-      <div><div className="xapp-title"><ShieldCheck /><span>RANDOM FOREST XAPP + NATIVE E2SM-RC</span></div><h3>VoiceGuard RF V2</h3><p>8 台動態影片＋UE9/UE10 隨機通話 · RF 選擇最少必要的保護比例</p></div>
+      <div><div className="xapp-title"><ShieldCheck /><span>{rfScenario ? 'RANDOM FOREST XAPP + NATIVE E2SM-RC' : 'RULE XAPP + NATIVE E2SM-RC'}</span></div><h3>{rfScenario ? 'VoiceGuard RF V2' : 'VoiceGuard Rule V1 · 3 UE'}</h3><p>{rfScenario ? '8 台動態影片＋UE9/UE10 隨機通話 · RF 選擇最少必要的保護比例' : 'UE1／UE2 背景流量＋UE3 語音通話 · 規則式 QoS 保護'}</p></div>
       <div className="voiceguard-actions"><span className={`xapp-state ${status?.state?.toLowerCase() ?? 'off'}`}>{status?.state ?? 'OFF'}</span><button className={running ? 'danger small' : 'primary small'} disabled={!activeRun || busy} onClick={onToggle}>{running ? <CircleStop /> : <Play />}{busy ? '處理中…' : running ? '關閉並恢復基線' : '啟動 xApp'}</button></div>
     </div>
     <div className="voiceguard-config">
       <label><span>執行模式</span><select value={running ? status?.mode ?? mode : mode} disabled={running || busy} onChange={event => onMode(event.target.value as 'observe_only' | 'closed_loop')}><option value="closed_loop">Closed Loop（實際控制）</option><option value="observe_only">Observe Only（只觀察）</option></select></label>
-      <label><span>策略引擎</span><select value={running ? status?.algorithm ?? algorithm : algorithm} disabled={running || busy} onChange={event => onAlgorithm(event.target.value as 'rules' | 'random_forest')}><option value="random_forest">Random Forest V2</option><option value="rules">Rule V1（3 UE 舊版）</option></select></label>
-      <div className="rc-link online"><span>RF Model</span><b>{status?.model_name ?? (algorithm === 'random_forest' ? 'voiceguard_rf.joblib' : `Rule · ${policy.videoScale}%`)}</b></div>
+      <label><span>策略引擎</span><select value={running ? status?.algorithm ?? algorithm : algorithm} disabled={running || busy} onChange={event => onAlgorithm(event.target.value as 'rules' | 'random_forest')}>{rfScenario && <option value="random_forest">Random Forest V2</option>}<option value="rules">Rule V1（3 UE）</option></select></label>
+      <div className="rc-link online"><span>{rfScenario ? 'RF Model' : 'Policy'}</span><b>{status?.model_name ?? (algorithm === 'random_forest' ? 'voiceguard_rf.joblib' : `Rule · ${policy.videoScale}%`)}</b></div>
       <div className={`rc-link ${status?.e2_connected ? 'online' : ''}`}><span>RC Link</span><b>{status?.e2_connected ? 'ACK / CONNECTED' : running && status?.mode === 'closed_loop' ? 'CONNECTING' : 'STANDBY'}</b></div>
     </div>
     <div className="voiceguard-grid">
       <div><span>模式</span><b>{(status?.mode ?? mode).replace('_', ' ').toUpperCase()}</b><small>{status?.native_control ? 'E2SM-RC safety baseline verified' : 'No RAN control commands'}</small></div>
-      <div><span>語音通話</span><b>{status?.voice_active ? 'ACTIVE' : 'WAITING'}</b><small>{status?.active_voice_ues?.map(ue => ue.toUpperCase()).join(' + ') || '等待 UE9 / UE10 來電'}</small></div>
-      <div><span>影片 Offered</span><b>{videoOffered.toFixed(2)} Mbps</b><small>UE1–UE8 demand</small></div>
-      <div><span>RF 信心／延遲</span><b>{status?.prediction_confidence != null ? `${(status.prediction_confidence * 100).toFixed(1)}%` : '—'}</b><small>{status?.inference_ms != null ? `${status.inference_ms.toFixed(2)} ms · ${status.predicted_policy ?? ''}` : `${videoDelivered.toFixed(2)} Mbps delivered`}</small></div>
+      <div><span>語音通話</span><b>{status?.voice_active ? 'ACTIVE' : 'WAITING'}</b><small>{status?.active_voice_ues?.map(ue => ue.toUpperCase()).join(' + ') || (rfScenario ? '等待 UE9 / UE10 來電' : '等待 UE3 來電')}</small></div>
+      <div><span>影片 Offered</span><b>{videoOffered.toFixed(2)} Mbps</b><small>{rfScenario ? 'UE1–UE8 demand' : 'UE1 / UE2 demand'}</small></div>
+      <div><span>{rfScenario ? 'RF 信心／延遲' : '策略輸出'}</span><b>{status?.prediction_confidence != null ? `${(status.prediction_confidence * 100).toFixed(1)}%` : '—'}</b><small>{status?.inference_ms != null ? `${status.inference_ms.toFixed(2)} ms · ${status.predicted_policy ?? ''}` : `${videoDelivered.toFixed(2)} Mbps delivered`}</small></div>
     </div>
     <div className="voiceguard-decision"><i /><div><span>目前決策</span><b>{status?.last_decision ?? '尚未啟動 VoiceGuard'}</b><small>{status?.current_policy ?? (lastEvent ? `${new Date(lastEvent.timestamp * 1000).toLocaleTimeString()} · ${lastEvent.message}` : '安全預設：BASELINE')}</small></div></div>
   </section>
@@ -793,7 +801,7 @@ function ThroughputChart({ ues, history, offeredHistory, metrics }: { ues: strin
   return <div className="real-chart"><div className="chart-legend">{ues.map(ue => <div key={ue}><i style={{ background: colors[ue] }} /><b>{ue.toUpperCase()}</b><span>{(((metrics[ue]?.rx ?? 0) + (metrics[ue]?.tx ?? 0)) / 1e6).toFixed(2)} Mbps</span><small>Offered {((offeredHistory[ue]?.at(-1) ?? 0) / 1e6).toFixed(2)} Mbps · {metrics[ue]?.latency >= 0 ? `${metrics[ue].latency.toFixed(1)} ms · ${metrics[ue].loss.toFixed(0)}% loss` : '等待 UE'}</small></div>)}</div><svg viewBox="0 0 100 52" preserveAspectRatio="none"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,.05)" strokeWidth=".25" /></pattern></defs><rect width="100" height="52" fill="url(#grid)" />{ues.map(ue => <polyline key={`offered-${ue}`} points={points(offeredHistory[ue] ?? [])} fill="none" stroke={colors[ue]} strokeOpacity=".5" strokeDasharray="2 1.5" strokeWidth=".45" vectorEffect="non-scaling-stroke" />)}{ues.map(ue => <polyline key={ue} points={points(history[ue] ?? [])} fill="none" stroke={colors[ue]} strokeWidth=".65" vectorEffect="non-scaling-stroke" />)}</svg></div>
 }
 
-function VoiceQualityChart({ history, voiceGuard }: { history: VoiceHistory; voiceGuard: VoiceGuardStatus | null }) {
+function VoiceQualityChart({ history, voiceGuard, ueCount }: { history: VoiceHistory; voiceGuard: VoiceGuardStatus | null; ueCount: number }) {
   const offered = history.offered.at(-1) ?? 0
   const received = history.received.at(-1) ?? 0
   const loss = history.loss.at(-1) ?? 0
@@ -824,7 +832,7 @@ function VoiceQualityChart({ history, voiceGuard }: { history: VoiceHistory; voi
       <div><span>Received</span><b>{(received / 1000).toFixed(1)} Kbps</b><small>{(rollingDelivery * 100).toFixed(1)}% delivery · 3s</small></div>
       <div><span>Loss</span><b>{loss.toFixed(1)}%</b><small>目標 ≤ 2%</small></div>
       <div><span>Jitter</span><b>{jitter.toFixed(1)} ms</b><small>目標 ≤ 30 ms</small></div>
-      <div><span>RTT P95</span><b>{rtt.toFixed(1)} ms</b><small>10 UE 目標 ≤ 120 ms</small></div>
+      <div><span>RTT P95</span><b>{rtt.toFixed(1)} ms</b><small>{ueCount} UE 目標 ≤ 120 ms</small></div>
     </div>
     <div className="voice-rate-chart"><div className="voice-chart-label"><span><i className="offered-line" />Offered</span><span><i className="received-line" />Received</span></div><svg viewBox="0 0 100 52" preserveAspectRatio="none"><rect width="100" height="52" fill="url(#grid)" />{transitions.map(index => <line key={index} x1={(index / 39) * 100} x2={(index / 39) * 100} y1="0" y2="52" stroke="#edc46b" strokeDasharray="1 1" strokeWidth=".35" vectorEffect="non-scaling-stroke" />)}<polyline points={points(history.offered, rateMaximum)} fill="none" stroke="#edc46b" strokeOpacity=".7" strokeDasharray="2 1.5" strokeWidth=".55" vectorEffect="non-scaling-stroke" /><polyline points={points(history.received, rateMaximum)} fill="none" stroke="#60e3a4" strokeWidth=".75" vectorEffect="non-scaling-stroke" /></svg></div>
     <div className="voice-quality-series">{qualitySeries.map(series => <div key={series.label}><div><span>{series.label}</span><b>{series.value.toFixed(1)} {series.unit}</b></div><svg viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points={points(series.values, series.maximum, 24)} fill="none" stroke={series.color} strokeWidth=".7" vectorEffect="non-scaling-stroke" /></svg></div>)}</div>
