@@ -184,6 +184,12 @@ VOICEGUARD_RF_SCRIPT = LAB_ROOT / "xapps" / "voiceguard_rf" / "voiceguard_rf.py"
 VOICEGUARD_RF_MODEL = (
     LAB_ROOT / "xapps" / "voiceguard_rf" / "models" / "voiceguard_rf.joblib"
 )
+VOICEGUARD_RF_3UE_SCRIPT = (
+    LAB_ROOT / "xapps" / "voiceguard_rf_3ue" / "voiceguard_rf_3ue.py"
+)
+VOICEGUARD_RF_3UE_MODEL = (
+    LAB_ROOT / "xapps" / "voiceguard_rf_3ue" / "models" / "voiceguard_rf_3ue.joblib"
+)
 VOICEGUARD_RC_BRIDGE = (
     LAB_ROOT / "src" / "flexric" / "build" / "examples" / "xApp" / "c"
     / "voiceguard_rc" / "voiceguard_rc"
@@ -1175,18 +1181,21 @@ def start_voiceguard(
         raise HTTPException(404, "run not found")
     if run.state != "RUNNING":
         raise HTTPException(409, "VoiceGuard requires a RUNNING experiment")
-    script = (
-        VOICEGUARD_RF_SCRIPT
-        if payload.config.algorithm == "random_forest"
-        else VOICEGUARD_SCRIPT
-    )
+    configured_ues = {item["ue"] for item in run_traffic_configuration(run)}
+    is_3ue_scenario = configured_ues == {"ue1", "ue2", "ue3"}
+    if payload.config.algorithm == "random_forest":
+        script = VOICEGUARD_RF_3UE_SCRIPT if is_3ue_scenario else VOICEGUARD_RF_SCRIPT
+        default_model = VOICEGUARD_RF_3UE_MODEL if is_3ue_scenario else VOICEGUARD_RF_MODEL
+    else:
+        script = VOICEGUARD_SCRIPT
+        default_model = None
     if not script.exists():
         raise HTTPException(500, f"VoiceGuard script not found: {script}")
     if payload.mode == "closed_loop" and not os.access(VOICEGUARD_RC_BRIDGE, os.X_OK):
         raise HTTPException(503, f"VoiceGuard RC bridge is not executable: {VOICEGUARD_RC_BRIDGE}")
     config = payload.config.model_dump()
     if payload.config.algorithm == "random_forest":
-        model = Path(payload.config.model_path or VOICEGUARD_RF_MODEL).resolve()
+        model = Path(payload.config.model_path or default_model).resolve()
         try:
             model.relative_to(LAB_ROOT.resolve())
         except ValueError as exc:
@@ -1233,7 +1242,7 @@ def start_voiceguard(
         database, run_id, "voiceguard_started",
         f"VoiceGuard xApp 已用 {payload.mode} 模式啟動",
         component="voiceguard", mode=payload.mode,
-        algorithm=payload.config.algorithm, pid=process.pid,
+        algorithm=payload.config.algorithm, scenario="3ue" if is_3ue_scenario else "10ue", pid=process.pid,
     )
     database.commit()
     return {
@@ -1264,7 +1273,7 @@ def stop_voiceguard(run_id: str, database: Session = Depends(get_db)):
         pass
     add_event(
         database, run_id, "voiceguard_stop_requested",
-        "正在停止 VoiceGuard；Closed Loop 會恢復 10 UE 流量與 RC 安全基線",
+        "正在停止 VoiceGuard；Closed Loop 會恢復流量與 RC 安全基線",
         component="voiceguard",
     )
     database.commit()

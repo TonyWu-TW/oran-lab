@@ -1,0 +1,29 @@
+{
+  "run_id": "a6b82179-1375-43a6-9724-a4ad5564bbdb",
+  "scenario": "3ue_2video_1voice",
+  "method": "sequential 20-second windows after a 5-second policy transition",
+  "sla": {
+    "delivery_ratio_min": 0.95,
+    "loss_percent_max": 2.0,
+    "jitter_ms_max": 30.0,
+    "rtt_p95_ms_max": 60.0
+  },
+  "rf_strong_40": {
+    "samples": 20,
+    "rtt_median_ms": 41.2353505,
+    "rtt_p95_ms": 100.817749,
+    "jitter_median_ms": 11.381917697986577,
+    "sla_success_rate": 0.75
+  },
+  "baseline_100": {
+    "samples": 20,
+    "rtt_median_ms": 90.848112,
+    "rtt_p95_ms": 113.973664,
+    "jitter_median_ms": 12.251856792639817,
+    "sla_success_rate": 0.2
+  },
+  "limitations": [
+    "The windows are sequential rather than randomized and are a deployment smoke test, not the GroupKFold estimate.",
+    "RF pacing improves median RTT and SLA rate but does not eliminate radio scheduler RTT spikes."
+  ]
+}

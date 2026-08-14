@@ -1,0 +1,114 @@
+{
+  "raw_samples": 1296,
+  "round_specific_scenarios": 108,
+  "independent_load_pairs": 36,
+  "rounds_per_load_pair": {
+    "minimum": 3.0,
+    "median": 3.0,
+    "maximum": 3.0
+  },
+  "samples_per_policy": {
+    "MEDIUM_70": 324,
+    "STRONG_40": 324,
+    "EQUAL_100": 324,
+    "LIGHT_85": 324
+  },
+  "sample_sla_success_rate_by_policy": {
+    "EQUAL_100": 0.5154320987654321,
+    "LIGHT_85": 0.5246913580246914,
+    "MEDIUM_70": 0.6358024691358025,
+    "STRONG_40": 0.8271604938271605
+  },
+  "aggregated_label_distribution": {
+    "EQUAL_100": 11,
+    "LIGHT_85": 5,
+    "MEDIUM_70": 5,
+    "STRONG_40": 15
+  },
+  "repeat_label_agreement": {
+    "minimum": 0.3333333333333333,
+    "median": 0.6666666666666666,
+    "maximum": 1.0
+  },
+  "non_monotonic_load_pairs": 13,
+  "missing_feature_values": {
+    "video_offered_mbps": 0,
+    "video_delivered_mbps": 0,
+    "video_delivery_ratio": 0,
+    "video_gap_mbps": 0,
+    "video_worst_delivery_ratio": 0,
+    "video_imbalance_mbps": 0,
+    "ue1_offered_mbps": 0,
+    "ue2_offered_mbps": 0,
+    "voice_delivery_ratio": 0,
+    "voice_loss_percent": 0,
+    "voice_jitter_ms": 0,
+    "voice_rtt_p95_ms": 0
+  },
+  "feature_distribution": {
+    "video_offered_mbps": {
+      "minimum": 1.9099768541358253,
+      "median": 7.28,
+      "maximum": 22.4
+    },
+    "video_delivered_mbps": {
+      "minimum": 1.9099768541358253,
+      "median": 7.28,
+      "maximum": 22.4
+    },
+    "video_delivery_ratio": {
+      "minimum": 1.0,
+      "median": 1.0,
+      "maximum": 1.0
+    },
+    "video_gap_mbps": {
+      "minimum": 0.0,
+      "median": 0.0,
+      "maximum": 0.0
+    },
+    "video_worst_delivery_ratio": {
+      "minimum": 1.0,
+      "median": 1.0,
+      "maximum": 1.0
+    },
+    "video_imbalance_mbps": {
+      "minimum": 0.0,
+      "median": 2.0678955547513147,
+      "maximum": 10.015034718796263
+    },
+    "ue1_offered_mbps": {
+      "minimum": 1.054602775682328,
+      "median": 3.472833351397172,
+      "maximum": 11.2
+    },
+    "ue2_offered_mbps": {
+      "minimum": 0.7899768541358254,
+      "median": 3.1599074165433017,
+      "maximum": 11.2
+    },
+    "voice_delivery_ratio": {
+      "minimum": 0.9733333333333334,
+      "median": 1.0,
+      "maximum": 1.0
+    },
+    "voice_loss_percent": {
+      "minimum": 0.0,
+      "median": 0.0,
+      "maximum": 2.6666666666666665
+    },
+    "voice_jitter_ms": {
+      "minimum": 8.704630845637576,
+      "median": 11.25123268835026,
+      "maximum": 15.417731288590607
+    },
+    "voice_rtt_p95_ms": {
+      "minimum": 32.707272,
+      "median": 43.581612,
+      "maximum": 145.22813
+    }
+  },
+  "notes": [
+    "Non-monotonic policy outcomes are retained as measured radio/scheduler noise.",
+    "Training and validation group all rounds of one offered-load pair together."
+  ]
+}

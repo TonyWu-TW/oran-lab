@@ -1,0 +1,84 @@
+name: oran-local-ai
+
+services:
+  vllm:
+    image: vllm/vllm-openai:gemma4-unified
+    container_name: oran-vllm-qwen
+    ipc: host
+    restart: unless-stopped
+    environment:
+      HF_HOME: /root/.cache/huggingface
+    volumes:
+      - ${MODEL_DIR:-/home/zju/.cache/oran-local-ai/models/Qwen3.5-9B}:/models/Qwen3.5-9B:ro
+    ports:
+      - "127.0.0.1:8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+    command:
+      - /models/Qwen3.5-9B
+      - --served-model-name
+      - qwen3.5-9b
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --dtype
+      - bfloat16
+      - --max-model-len
+      - "32768"
+      - --gpu-memory-utilization
+      - "0.92"
+      - --max-num-seqs
+      - "8"
+      - --language-model-only
+      - --enforce-eager
+      - --reasoning-parser
+      - qwen3
+      - --enable-auto-tool-choice
+      - --tool-call-parser
+      - qwen3_coder
+      - --default-chat-template-kwargs
+      - '{"enable_thinking": false}'
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 10m
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.11.0-slim
+    container_name: oran-open-webui
+    restart: unless-stopped
+    environment:
+      WEBUI_AUTH: "false"
+      ENABLE_SIGNUP: "false"
+      ENABLE_PERSISTENT_CONFIG: "false"
+      ENABLE_OPENAI_API: "true"
+      OPENAI_API_BASE_URL: http://vllm:8000/v1
+      OPENAI_API_KEY: none
+      DEFAULT_MODELS: qwen3.5-9b
+      ENABLE_EVALUATION_ARENA_MODELS: "false"
+      AIOHTTP_CLIENT_TIMEOUT_MODEL_LIST: "30"
+      RAG_EMBEDDING_ENGINE: openai
+      RAG_OPENAI_API_BASE_URL: http://vllm:8000/v1
+      RAG_OPENAI_API_KEY: none
+      RAG_EMBEDDING_MODEL: qwen3.5-9b
+      BYPASS_EMBEDDING_AND_RETRIEVAL: "true"
+    volumes:
+      - open-webui-data:/app/backend/data
+    ports:
+      - "0.0.0.0:3000:8080"
+      - "0.0.0.0:80:8080"
+
+volumes:
+  open-webui-data:

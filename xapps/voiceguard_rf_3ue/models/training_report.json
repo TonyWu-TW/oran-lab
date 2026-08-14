@@ -1,0 +1,182 @@
+{
+  "trained_at": 1785750022.7557461,
+  "python_version": "3.10.12",
+  "sklearn_version": "1.7.1",
+  "dataset": "xapps/voiceguard_rf_3ue/dataset/training.csv",
+  "model": "xapps/voiceguard_rf_3ue/models/voiceguard_rf_3ue.joblib",
+  "rows": 108,
+  "scenarios": 36,
+  "class_distribution": {
+    "EQUAL_100": 33,
+    "LIGHT_85": 15,
+    "MEDIUM_70": 15,
+    "STRONG_40": 45
+  },
+  "group_cross_validation_folds": 5,
+  "group_cross_validation_accuracy": 0.5092592592592593,
+  "group_cross_validation_balanced_accuracy": 0.3944444444444445,
+  "confusion_matrix_labels": [
+    "EQUAL_100",
+    "LIGHT_85",
+    "MEDIUM_70",
+    "STRONG_40"
+  ],
+  "confusion_matrix": [
+    [
+      22,
+      2,
+      3,
+      6
+    ],
+    [
+      6,
+      3,
+      6,
+      0
+    ],
+    [
+      2,
+      3,
+      1,
+      9
+    ],
+    [
+      9,
+      6,
+      1,
+      29
+    ]
+  ],
+  "classification_report": {
+    "EQUAL_100": {
+      "precision": 0.5641025641025641,
+      "recall": 0.6666666666666666,
+      "f1-score": 0.6111111111111112,
+      "support": 33.0
+    },
+    "LIGHT_85": {
+      "precision": 0.21428571428571427,
+      "recall": 0.2,
+      "f1-score": 0.20689655172413793,
+      "support": 15.0
+    },
+    "MEDIUM_70": {
+      "precision": 0.09090909090909091,
+      "recall": 0.06666666666666667,
+      "f1-score": 0.07692307692307693,
+      "support": 15.0
+    },
+    "STRONG_40": {
+      "precision": 0.6590909090909091,
+      "recall": 0.6444444444444445,
+      "f1-score": 0.651685393258427,
+      "support": 45.0
+    },
+    "accuracy": 0.5092592592592593,
+    "macro avg": {
+      "precision": 0.38209706959706957,
+      "recall": 0.3944444444444445,
+      "f1-score": 0.38665403325418823,
+      "support": 108.0
+    },
+    "weighted avg": {
+      "precision": 0.48937405187405186,
+      "recall": 0.5092592592592593,
+      "f1-score": 0.4976833684537417,
+      "support": 108.0
+    }
+  },
+  "scenario_level": {
+    "accuracy": 0.5,
+    "balanced_accuracy": 0.38181818181818183,
+    "within_one_policy_level_accuracy": 0.7777777777777778,
+    "mean_absolute_policy_level_error": 0.8333333333333334,
+    "confusion_matrix_labels": [
+      "EQUAL_100",
+      "LIGHT_85",
+      "MEDIUM_70",
+      "STRONG_40"
+    ],
+    "confusion_matrix": [
+      [
+        8,
+        0,
+        1,
+        2
+      ],
+      [
+        2,
+        1,
+        2,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        4
+      ],
+      [
+        2,
+        3,
+        1,
+        9
+      ]
+    ]
+  },
+  "counterfactual_policy_evaluation": {
+    "scenarios": 36,
+    "rf_selected_sla_success_rate": 0.5555555555555556,
+    "equal_100_sla_success_rate": 0.3055555555555556,
+    "always_strong_40_sla_success_rate": 0.7777777777777778,
+    "rf_mean_video_scale": 0.695833333333333,
+    "always_strong_mean_video_scale": 0.4,
+    "under_protection_rate": 0.25,
+    "over_protection_rate": 0.25,
+    "risk_quantile": 0.8,
+    "risk_aware_sla_success_rate": 0.6666666666666666,
+    "risk_aware_mean_video_scale": 0.533333333333333,
+    "risk_aware_policy_distribution": {
+      "LIGHT_85": 4,
+      "MEDIUM_70": 8,
+      "STRONG_40": 23,
+      "EQUAL_100": 1
+    },
+    "note": "Held-out RF choices are scored against policy windows measured on the same load pair; runtime safety escalation is not included."
+  },
+  "feature_importance": {
+    "video_offered_mbps": 0.1824387870643483,
+    "video_delivered_mbps": 0.17645755001939084,
+    "ue2_offered_mbps": 0.15854045925014257,
+    "voice_rtt_p95_ms": 0.15000455154212022,
+    "video_imbalance_mbps": 0.1418104879879262,
+    "voice_jitter_ms": 0.11686922838452958,
+    "ue1_offered_mbps": 0.07278655087029692,
+    "voice_loss_percent": 0.0007165052494329782,
+    "voice_delivery_ratio": 0.0003758796318123379,
+    "video_delivery_ratio": 0.0,
+    "video_gap_mbps": 0.0,
+    "video_worst_delivery_ratio": 0.0
+  },
+  "parameters": {
+    "bootstrap": true,
+    "ccp_alpha": 0.0,
+    "class_weight": "balanced_subsample",
+    "criterion": "gini",
+    "max_depth": 5,
+    "max_features": "sqrt",
+    "max_leaf_nodes": null,
+    "max_samples": null,
+    "min_impurity_decrease": 0.0,
+    "min_samples_leaf": 3,
+    "min_samples_split": 2,
+    "min_weight_fraction_leaf": 0.0,
+    "monotonic_cst": null,
+    "n_estimators": 500,
+    "n_jobs": -1,
+    "oob_score": false,
+    "random_state": 20260803,
+    "verbose": 0,
+    "warm_start": false
+  }
+}

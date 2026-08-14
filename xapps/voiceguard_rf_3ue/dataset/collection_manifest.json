@@ -1,0 +1,112 @@
+{
+  "run_id": "a6b82179-1375-43a6-9724-a4ad5564bbdb",
+  "manager_url": "http://127.0.0.1:8088",
+  "campaign": "fair-base8-w3",
+  "rounds": 3,
+  "levels": [
+    0.15,
+    0.25,
+    0.4,
+    0.55,
+    0.75,
+    1.0
+  ],
+  "warmup_seconds": 3,
+  "sample_seconds": 3,
+  "random_seed": 20260803,
+  "expected_scenarios": 108,
+  "expected_raw_samples": 1296,
+  "traffic_configuration": {
+    "run_id": "a6b82179-1375-43a6-9724-a4ad5564bbdb",
+    "ues": [
+      {
+        "ue": "ue1",
+        "display_name": "UE 1",
+        "enabled": true,
+        "traffic": {
+          "version": 2,
+          "flows": [
+            {
+              "type": "short_video",
+              "application_protocol": "http",
+              "transport": "tcp",
+              "direction": "DL",
+              "run_mode": "continuous",
+              "duration_seconds": null,
+              "params": {
+                "offered_load_mbps": 8.0,
+                "traffic_pattern": "wave",
+                "variation_percent": 45,
+                "peak_limit_mbps": 11.2,
+                "random_seed": 3101,
+                "pattern_period_seconds": 16,
+                "segment_interval_ms": 1000
+              }
+            }
+          ]
+        }
+      },
+      {
+        "ue": "ue2",
+        "display_name": "UE 2",
+        "enabled": true,
+        "traffic": {
+          "version": 2,
+          "flows": [
+            {
+              "type": "short_video",
+              "application_protocol": "http",
+              "transport": "tcp",
+              "direction": "DL",
+              "run_mode": "continuous",
+              "duration_seconds": null,
+              "params": {
+                "offered_load_mbps": 8.0,
+                "traffic_pattern": "random_burst",
+                "variation_percent": 45,
+                "peak_limit_mbps": 11.2,
+                "random_seed": 3102,
+                "pattern_period_seconds": 18,
+                "segment_interval_ms": 1000
+              }
+            }
+          ]
+        }
+      },
+      {
+        "ue": "ue3",
+        "display_name": "UE 3",
+        "enabled": true,
+        "traffic": {
+          "version": 2,
+          "flows": [
+            {
+              "type": "rtp_voice",
+              "application_protocol": "rtp-like",
+              "transport": "udp",
+              "direction": "BOTH",
+              "run_mode": "continuous",
+              "duration_seconds": null,
+              "params": {
+                "packet_interval_ms": 20,
+                "bitrate_kbps": 128
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "sla": {
+    "delivery_ratio_min": 0.95,
+    "loss_percent_max": 2.0,
+    "jitter_ms_max": 30.0,
+    "rtt_p95_ms_max": 60.0
+  },
+  "policy_scales": {
+    "EQUAL_100": 1.0,
+    "LIGHT_85": 0.85,
+    "MEDIUM_70": 0.7,
+    "STRONG_40": 0.4
+  }
+}

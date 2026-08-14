@@ -16,6 +16,7 @@ import subprocess
 import time
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import joblib
@@ -29,6 +30,7 @@ from common import (
     atomic_write_json,
     extract_features,
     feature_vector,
+    median_features,
     voice_sla_ok,
     write_traffic_scale,
 )
@@ -62,9 +64,15 @@ def get_json(url: str) -> Any:
 
 
 def metric_values(manager_url: str, run_id: str, metric: str) -> dict[str, float]:
-    payload = get_json(
-        f"{manager_url}/api/runs/{run_id}/metrics/query?metric={metric}"
-    )
+    try:
+        payload = get_json(
+            f"{manager_url}/api/runs/{run_id}/metrics/query?metric={metric}"
+        )
+    except (HTTPError, URLError, TimeoutError):
+        # Prometheus is optional for the xApp. The traffic job progress API
+        # exposes the same offered/delivered fields and extract_features uses
+        # it automatically when this map is empty.
+        return {}
     return {
         str(item.get("metric", {}).get("ue")): float(item["value"][1])
         for item in payload.get("data", {}).get("result", [])
@@ -89,13 +97,14 @@ def policy_string(policies: list[dict[str, int]]) -> str:
 def apply_rc_baseline(
     bridge: Path,
     *,
+    ue_count: int,
     timeout_seconds: float,
     sst: int,
     sd: int,
 ) -> dict[str, Any]:
     policies = [
         {"ue_id": index, "minimum": 0, "maximum": 100, "dedicated": 0}
-        for index in range(10)
+        for index in range(ue_count)
     ]
     environment = {
         **os.environ,
@@ -144,7 +153,7 @@ def apply_rc_baseline(
         "returncode": result.returncode,
         "results": result_lines,
         "error": "; ".join(errors)
-        or (None if success else "RC bridge did not acknowledge all 10 baseline policies"),
+        or (None if success else f"RC bridge did not acknowledge all {ue_count} baseline policies"),
         "policies": policies,
     }
 
@@ -171,6 +180,12 @@ def main() -> int:
     restore_step_seconds = float(config.get("restore_step_seconds", 3.0))
 
     artifact = joblib.load(model_path)
+    decision_window = int(artifact.get("input_window_seconds") or required_samples)
+    decision_quantile = (
+        float(artifact["decision_quantile"])
+        if artifact.get("decision_quantile") is not None
+        else None
+    )
     model = artifact["model"]
     artifact_features = tuple(artifact.get("feature_names") or ())
     if artifact_features != FEATURE_NAMES:
@@ -188,6 +203,10 @@ def main() -> int:
 
     signal.signal(signal.SIGINT, request_stop)
     signal.signal(signal.SIGTERM, request_stop)
+    ue_count = len(VIDEO_UES) + len(VOICE_UES)
+    voice_names = " / ".join(ue.upper() for ue in VOICE_UES)
+    scenario = str(artifact.get("scenario") or "10ue_8video_2voice")
+    model_name = "VoiceGuard RF V2 · 3 UE" if scenario == "3ue_2video_1voice" else "VoiceGuard RF V2"
     state: dict[str, Any] = {
         "run_id": arguments.run_id,
         "pid": os.getpid(),
@@ -195,9 +214,11 @@ def main() -> int:
         "state": "OBSERVING",
         "mode": arguments.mode,
         "algorithm": "random_forest",
-        "model_name": "VoiceGuard RF V2",
+        "model_name": model_name,
         "model_path": str(model_path),
         "model_trained_at": artifact.get("trained_at"),
+        "input_window_seconds": decision_window,
+        "decision_quantile": decision_quantile,
         "feature_importance": importance,
         "e2_adapter": "manager_metrics+native_flexric_rc+traffic_pacing",
         "e2_connected": False,
@@ -206,7 +227,7 @@ def main() -> int:
         "predicted_policy": None,
         "prediction_confidence": None,
         "policy_probabilities": {},
-        "last_decision": "等待 UE9 / UE10 語音通話",
+        "last_decision": f"等待 {voice_names} 語音通話",
         "last_sample_at": None,
         "actuator": "random_forest_selected_traffic_pacing+e2sm_rc_safety_baseline",
         "traffic_shaping_factor": 1.0,
@@ -221,8 +242,8 @@ def main() -> int:
     current_policy = "EQUAL_100"
     predicted_policy = "EQUAL_100"
     previous_voice_signature: tuple[str, ...] = ()
-    inference_wait = 0
     decision_initialized = False
+    feature_history: list[dict[str, float]] = []
     bad_samples = stable_samples = 0
     next_restore_at = 0.0
     try:
@@ -233,6 +254,7 @@ def main() -> int:
             if bridge.is_file() and os.access(bridge, os.X_OK):
                 rc = apply_rc_baseline(
                     bridge,
+                    ue_count=ue_count,
                     timeout_seconds=float(config.get("rc_timeout_seconds", 30.0)),
                     sst=int(config.get("sst", 1)),
                     sd=parse_sd(config.get("sd", "ffffff")),
@@ -244,7 +266,7 @@ def main() -> int:
                     state,
                     "rc_ready" if rc["success"] else "rc_warning",
                     (
-                        f"10 UE E2SM-RC baseline ACK（{rc['duration_ms']:.0f} ms）"
+                        f"{ue_count} UE E2SM-RC baseline ACK（{rc['duration_ms']:.0f} ms）"
                         if rc["success"]
                         else f"RC baseline 未完整 ACK；RF pacing 仍可運作：{rc['error']}"
                     ),
@@ -277,13 +299,9 @@ def main() -> int:
                     if ue_metrics.get(ue, {}).get("offered_bps", 0) > 0
                 )
                 voice_active = bool(voice_signature)
-                healthy = voice_sla_ok(features)
-                bad_samples = bad_samples + 1 if voice_active and not healthy else 0
-                stable_samples = stable_samples + 1 if voice_active and healthy else 0
-
                 if voice_signature != previous_voice_signature:
+                    feature_history = []
                     if voice_active:
-                        inference_wait = required_samples
                         decision_initialized = False
                         bad_samples = stable_samples = 0
                         append_event(
@@ -297,32 +315,50 @@ def main() -> int:
                         append_event(state, "voice_stopped", "所有語音通話已結束")
                     previous_voice_signature = voice_signature
 
+                feature_history.append(features)
+                feature_history = feature_history[-decision_window:]
+                stable_features = median_features(feature_history)
+                healthy = voice_sla_ok(stable_features)
+                bad_samples = bad_samples + 1 if voice_active and not healthy else 0
+                stable_samples = stable_samples + 1 if voice_active and healthy else 0
+
                 if voice_active:
-                    if inference_wait > 0:
-                        inference_wait -= 1
+                    if len(feature_history) < decision_window:
+                        remaining = decision_window - len(feature_history)
                         state["state"] = "OBSERVING"
                         state["last_decision"] = (
-                            f"收集最近 3 秒通話狀態（剩 {inference_wait} 筆）"
+                            f"收集最近 {decision_window} 秒通話狀態（剩 {remaining} 筆）"
                         )
                     elif not decision_initialized:
                         started = time.perf_counter()
-                        prediction = str(model.predict([feature_vector(features)])[0])
+                        prediction = str(model.predict([feature_vector(stable_features)])[0])
                         probabilities = {
                             str(label): float(probability)
                             for label, probability in zip(
                                 model.classes_,
-                                model.predict_proba([feature_vector(features)])[0],
+                                model.predict_proba([feature_vector(stable_features)])[0],
                             )
                         }
                         inference_ms = (time.perf_counter() - started) * 1000
                         if prediction not in POLICY_SCALES:
                             prediction = "STRONG_40"
-                        predicted_policy = prediction
+                        argmax_prediction = prediction
                         selected = prediction
+                        if decision_quantile is not None:
+                            cumulative = 0.0
+                            selected = POLICY_ORDER[-1]
+                            for candidate in POLICY_ORDER:
+                                cumulative += probabilities.get(candidate, 0.0)
+                                if cumulative >= decision_quantile:
+                                    selected = candidate
+                                    break
+                        predicted_policy = selected
                         decision_initialized = True
+                        bad_samples = stable_samples = 0
                         state["inference_ms"] = round(inference_ms, 3)
-                        state["predicted_policy"] = prediction
-                        state["prediction_confidence"] = probabilities.get(prediction)
+                        state["model_argmax_policy"] = argmax_prediction
+                        state["predicted_policy"] = selected
+                        state["prediction_confidence"] = probabilities.get(selected)
                         state["policy_probabilities"] = probabilities
                         if arguments.mode == "closed_loop" and selected != current_policy:
                             current_policy = selected
@@ -349,11 +385,12 @@ def main() -> int:
                             ]
                             bad_samples = 0
                             stable_samples = 0
-                            append_event(
-                                state,
-                                "safety_escalation",
-                                f"連續 3 秒未達 SLA，安全層升級至 {selected}",
-                            )
+                            if selected != current_policy:
+                                append_event(
+                                    state,
+                                    "safety_escalation",
+                                    f"連續 3 秒未達 SLA，安全層升級至 {selected}",
+                                )
                         if arguments.mode == "closed_loop" and selected != current_policy:
                             current_policy = selected
                             scale = POLICY_SCALES[current_policy]
@@ -385,7 +422,8 @@ def main() -> int:
                     )
                     confidence = float(state.get("prediction_confidence") or 0.0)
                     state["last_decision"] = (
-                        f"RF 建議 {predicted_policy}（信心 {confidence * 100:.1f}%）；"
+                        f"RF {f'q={decision_quantile:.1f}' if decision_quantile is not None else 'argmax'} "
+                        f"建議 {predicted_policy}（class {confidence * 100:.1f}%）；"
                         f"安全層目前維持 {effective}"
                     )
                 else:
@@ -414,7 +452,7 @@ def main() -> int:
                     state["last_decision"] = (
                         f"通話已結束，逐級恢復中：{current_policy}"
                         if current_policy != "EQUAL_100"
-                        else "等待 UE9 / UE10 語音通話"
+                        else f"等待 {voice_names} 語音通話"
                     )
 
                 scale = POLICY_SCALES[current_policy]
@@ -424,7 +462,8 @@ def main() -> int:
                 state["traffic_shaping_factor"] = scale
                 state["voice_active"] = voice_active
                 state["active_voice_ues"] = list(voice_signature)
-                state["current_features"] = features
+                state["current_features"] = stable_features
+                state["latest_features"] = features
                 state["ues"] = ue_metrics
                 state["total_video_offered_bps"] = (
                     features["video_offered_mbps"] * 1_000_000

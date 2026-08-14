@@ -623,7 +623,7 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
   const rfScenario = configuredUEs.some(item => ['ue9', 'ue10'].includes(item.ue))
   const voiceUENames = rfScenario ? ['ue9', 'ue10'] : ['ue3']
   useEffect(() => {
-    if (configuredUEs.length) setVoiceGuardAlgorithm(rfScenario ? 'random_forest' : 'rules')
+    if (configuredUEs.length) setVoiceGuardAlgorithm('random_forest')
   }, [run?.id, configuredUEs.length, rfScenario])
   const refreshTraffic = useCallback(async () => {
     if (!run) { setJobs([]); setConfiguredUEs([]); return }
@@ -743,25 +743,27 @@ function VoiceGuardPanel({ status, activeRun, rfScenario, busy, mode, algorithm,
   onToggle: () => void
 }) {
   const running = !!status?.running
+  const selectedAlgorithm = running ? status?.algorithm ?? algorithm : algorithm
+  const isRandomForest = selectedAlgorithm === 'random_forest'
   const videoOffered = Number(status?.total_video_offered_bps ?? 0) / 1e6
   const videoDelivered = Number(status?.total_video_delivered_bps ?? 0) / 1e6
   const lastEvent = status?.events?.at(-1)
   return <section className={`panel voiceguard-panel ${status?.state?.toLowerCase() ?? 'off'}`}>
     <div className="panel-head">
-      <div><div className="xapp-title"><ShieldCheck /><span>{rfScenario ? 'RANDOM FOREST XAPP + NATIVE E2SM-RC' : 'RULE XAPP + NATIVE E2SM-RC'}</span></div><h3>{rfScenario ? 'VoiceGuard RF V2' : 'VoiceGuard Rule V1 · 3 UE'}</h3><p>{rfScenario ? '8 台動態影片＋UE9/UE10 隨機通話 · RF 選擇最少必要的保護比例' : 'UE1／UE2 背景流量＋UE3 語音通話 · 規則式 QoS 保護'}</p></div>
+      <div><div className="xapp-title"><ShieldCheck /><span>{isRandomForest ? 'RANDOM FOREST XAPP + NATIVE E2SM-RC' : 'RULE XAPP + NATIVE E2SM-RC'}</span></div><h3>{isRandomForest ? `VoiceGuard RF V2${rfScenario ? '' : ' · 3 UE'}` : 'VoiceGuard Rule V1 · 3 UE'}</h3><p>{rfScenario ? '8 台動態影片＋UE9/UE10 隨機通話 · RF 選擇最少必要的保護比例' : isRandomForest ? 'UE1／UE2 動態影片＋UE3 語音通話 · RF 從真實 radio 資料選擇保護比例' : 'UE1／UE2 背景流量＋UE3 語音通話 · 規則式 QoS 保護'}</p></div>
       <div className="voiceguard-actions"><span className={`xapp-state ${status?.state?.toLowerCase() ?? 'off'}`}>{status?.state ?? 'OFF'}</span><button className={running ? 'danger small' : 'primary small'} disabled={!activeRun || busy} onClick={onToggle}>{running ? <CircleStop /> : <Play />}{busy ? '處理中…' : running ? '關閉並恢復基線' : '啟動 xApp'}</button></div>
     </div>
     <div className="voiceguard-config">
       <label><span>執行模式</span><select value={running ? status?.mode ?? mode : mode} disabled={running || busy} onChange={event => onMode(event.target.value as 'observe_only' | 'closed_loop')}><option value="closed_loop">Closed Loop（實際控制）</option><option value="observe_only">Observe Only（只觀察）</option></select></label>
-      <label><span>策略引擎</span><select value={running ? status?.algorithm ?? algorithm : algorithm} disabled={running || busy} onChange={event => onAlgorithm(event.target.value as 'rules' | 'random_forest')}>{rfScenario && <option value="random_forest">Random Forest V2</option>}<option value="rules">Rule V1（3 UE）</option></select></label>
-      <div className="rc-link online"><span>{rfScenario ? 'RF Model' : 'Policy'}</span><b>{status?.model_name ?? (algorithm === 'random_forest' ? 'voiceguard_rf.joblib' : `Rule · ${policy.videoScale}%`)}</b></div>
+      <label><span>策略引擎</span><select value={selectedAlgorithm} disabled={running || busy} onChange={event => onAlgorithm(event.target.value as 'rules' | 'random_forest')}><option value="random_forest">Random Forest V2{rfScenario ? '（10 UE）' : '（3 UE）'}</option><option value="rules">Rule V1（3 UE）</option></select></label>
+      <div className="rc-link online"><span>{isRandomForest ? 'RF Model' : 'Policy'}</span><b>{status?.model_name ?? (isRandomForest ? (rfScenario ? 'voiceguard_rf.joblib' : 'voiceguard_rf_3ue.joblib') : `Rule · ${policy.videoScale}%`)}</b></div>
       <div className={`rc-link ${status?.e2_connected ? 'online' : ''}`}><span>RC Link</span><b>{status?.e2_connected ? 'ACK / CONNECTED' : running && status?.mode === 'closed_loop' ? 'CONNECTING' : 'STANDBY'}</b></div>
     </div>
     <div className="voiceguard-grid">
       <div><span>模式</span><b>{(status?.mode ?? mode).replace('_', ' ').toUpperCase()}</b><small>{status?.native_control ? 'E2SM-RC safety baseline verified' : 'No RAN control commands'}</small></div>
       <div><span>語音通話</span><b>{status?.voice_active ? 'ACTIVE' : 'WAITING'}</b><small>{status?.active_voice_ues?.map(ue => ue.toUpperCase()).join(' + ') || (rfScenario ? '等待 UE9 / UE10 來電' : '等待 UE3 來電')}</small></div>
       <div><span>影片 Offered</span><b>{videoOffered.toFixed(2)} Mbps</b><small>{rfScenario ? 'UE1–UE8 demand' : 'UE1 / UE2 demand'}</small></div>
-      <div><span>{rfScenario ? 'RF 信心／延遲' : '策略輸出'}</span><b>{status?.prediction_confidence != null ? `${(status.prediction_confidence * 100).toFixed(1)}%` : '—'}</b><small>{status?.inference_ms != null ? `${status.inference_ms.toFixed(2)} ms · ${status.predicted_policy ?? ''}` : `${videoDelivered.toFixed(2)} Mbps delivered`}</small></div>
+      <div><span>{isRandomForest ? 'RF 信心／延遲' : '策略輸出'}</span><b>{status?.prediction_confidence != null ? `${(status.prediction_confidence * 100).toFixed(1)}%` : '—'}</b><small>{status?.inference_ms != null ? `${status.inference_ms.toFixed(2)} ms · ${status.predicted_policy ?? ''}` : `${videoDelivered.toFixed(2)} Mbps delivered`}</small></div>
     </div>
     <div className="voiceguard-decision"><i /><div><span>目前決策</span><b>{status?.last_decision ?? '尚未啟動 VoiceGuard'}</b><small>{status?.current_policy ?? (lastEvent ? `${new Date(lastEvent.timestamp * 1000).toLocaleTimeString()} · ${lastEvent.message}` : '安全預設：BASELINE')}</small></div></div>
   </section>

@@ -1,0 +1,2935 @@
+{
+  "run_id": "a6b82179-1375-43a6-9724-a4ad5564bbdb",
+  "updated_at": 1785749754.2915723,
+  "method": "test every candidate and label the least restrictive voice-SLA-compliant policy",
+  "sla": {
+    "delivery_ratio_min": 0.95,
+    "loss_percent_max": 2.0,
+    "jitter_ms_max": 30.0,
+    "rtt_p95_ms_max": 60.0
+  },
+  "policy_scales": {
+    "EQUAL_100": 1.0,
+    "LIGHT_85": 0.85,
+    "MEDIUM_70": 0.7,
+    "STRONG_40": 0.4
+  },
+  "scenarios": [
+    {
+      "scenario_id": "load-u1-015-u2-015",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-015-u2-015",
+        "fair-base8-w3-r02-u1-015-u2-015",
+        "fair-base8-w3-r03-u1-015-u2-015"
+      ],
+      "base_scales": {
+        "ue1": 0.15,
+        "ue2": 0.15
+      },
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.296334865771813,
+          "voice_rtt_p95_ms_median": 39.88074,
+          "video_offered_mbps_median": 3.36,
+          "video_delivered_mbps_median": 3.36
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.256433500000004,
+          "voice_rtt_p95_ms_median": 36.993485,
+          "video_offered_mbps_median": 2.5909759821619933,
+          "video_delivered_mbps_median": 2.5909759821619933
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.504297798657717,
+          "voice_rtt_p95_ms_median": 34.694437,
+          "video_offered_mbps_median": 2.1338120105573717,
+          "video_delivered_mbps_median": 2.1338120105573717
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.429462979310351,
+          "voice_rtt_p95_ms_median": 38.26677,
+          "video_offered_mbps_median": 2.032154245751627,
+          "video_delivered_mbps_median": 2.032154245751627
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 3.36,
+        "video_delivered_mbps": 3.36,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 0.0,
+        "ue1_offered_mbps": 1.68,
+        "ue2_offered_mbps": 1.68,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.296334865771813,
+        "voice_rtt_p95_ms": 39.88074
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-015-u2-025",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-015-u2-025",
+        "fair-base8-w3-r02-u1-015-u2-025",
+        "fair-base8-w3-r03-u1-015-u2-025"
+      ],
+      "base_scales": {
+        "ue1": 0.15,
+        "ue2": 0.25
+      },
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.448838219999997,
+          "voice_rtt_p95_ms_median": 37.674679,
+          "video_offered_mbps_median": 4.48,
+          "video_delivered_mbps_median": 4.48
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.820025222972973,
+          "voice_rtt_p95_ms_median": 38.014687,
+          "video_offered_mbps_median": 3.421888285195592,
+          "video_delivered_mbps_median": 3.421888285195592
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.782688389261741,
+          "voice_rtt_p95_ms_median": 37.868565,
+          "video_offered_mbps_median": 3.136,
+          "video_delivered_mbps_median": 3.136
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.63588206081081,
+          "voice_rtt_p95_ms_median": 35.09366,
+          "video_offered_mbps_median": 2.24,
+          "video_delivered_mbps_median": 2.24
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 4.48,
+        "video_delivered_mbps": 4.48,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 1.12,
+        "ue1_offered_mbps": 1.68,
+        "ue2_offered_mbps": 2.8,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.448838219999997,
+        "voice_rtt_p95_ms": 37.674679
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-015-u2-040",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-015-u2-040",
+        "fair-base8-w3-r02-u1-015-u2-040",
+        "fair-base8-w3-r03-u1-015-u2-040"
+      ],
+      "base_scales": {
+        "ue1": 0.15,
+        "ue2": 0.4
+      },
+      "label": "LIGHT_85",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.492683006666665,
+          "voice_rtt_p95_ms_median": 84.454831,
+          "video_offered_mbps_median": 5.492045669802503,
+          "video_delivered_mbps_median": 5.492045669802503
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.358674073825508,
+          "voice_rtt_p95_ms_median": 37.107566,
+          "video_offered_mbps_median": 4.668229735788933,
+          "video_delivered_mbps_median": 4.668229735788933
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.667397463087248,
+          "voice_rtt_p95_ms_median": 38.433777,
+          "video_offered_mbps_median": 3.8444330316600364,
+          "video_delivered_mbps_median": 3.8444330316600364
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.222061107382551,
+          "voice_rtt_p95_ms_median": 37.951343,
+          "video_offered_mbps_median": 2.912,
+          "video_delivered_mbps_median": 2.912
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 5.492045669802503,
+        "video_delivered_mbps": 5.492045669802503,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 2.328206919348688,
+        "ue1_offered_mbps": 1.68,
+        "ue2_offered_mbps": 3.910114066288527,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.492683006666665,
+        "voice_rtt_p95_ms": 84.454831
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-015-u2-055",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-015-u2-055",
+        "fair-base8-w3-r02-u1-015-u2-055",
+        "fair-base8-w3-r03-u1-015-u2-055"
+      ],
+      "base_scales": {
+        "ue1": 0.15,
+        "ue2": 0.55
+      },
+      "label": "MEDIUM_70",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.440119153333331,
+          "voice_rtt_p95_ms_median": 60.786823,
+          "video_offered_mbps_median": 6.95836834611186,
+          "video_delivered_mbps_median": 6.95836834611186
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.875366052631586,
+          "voice_rtt_p95_ms_median": 69.481854,
+          "video_offered_mbps_median": 5.914586149631653,
+          "video_delivered_mbps_median": 5.914586149631653
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.109700393333343,
+          "voice_rtt_p95_ms_median": 37.591929,
+          "video_offered_mbps_median": 4.870832386010792,
+          "video_delivered_mbps_median": 4.870832386010792
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.352726093333336,
+          "voice_rtt_p95_ms_median": 35.009599,
+          "video_offered_mbps_median": 3.584,
+          "video_delivered_mbps_median": 3.584
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 6.95836834611186,
+        "video_delivered_mbps": 6.95836834611186,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 3.7945153412255026,
+        "ue1_offered_mbps": 1.68,
+        "ue2_offered_mbps": 5.376406841146725,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.440119153333331,
+        "voice_rtt_p95_ms": 60.786823
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-015-u2-075",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-015-u2-075",
+        "fair-base8-w3-r02-u1-015-u2-075",
+        "fair-base8-w3-r03-u1-015-u2-075"
+      ],
+      "base_scales": {
+        "ue1": 0.15,
+        "ue2": 0.75
+      },
+      "label": "LIGHT_85",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.503737046666668,
+          "voice_rtt_p95_ms_median": 45.720164,
+          "video_offered_mbps_median": 8.913382548413596,
+          "video_delivered_mbps_median": 8.913382548413596
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.485408297297294,
+          "voice_rtt_p95_ms_median": 40.191638,
+          "video_offered_mbps_median": 7.5764050310041915,
+          "video_delivered_mbps_median": 7.5764050310041915
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.2998375472973,
+          "voice_rtt_p95_ms_median": 39.997174,
+          "video_offered_mbps_median": 6.239375641110843,
+          "video_delivered_mbps_median": 6.239375641110843
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.447995695945945,
+          "voice_rtt_p95_ms_median": 36.227261,
+          "video_offered_mbps_median": 4.48,
+          "video_delivered_mbps_median": 4.48
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 8.913382548413596,
+        "video_delivered_mbps": 8.913382548413596,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 5.749545200168382,
+        "ue1_offered_mbps": 1.68,
+        "ue2_offered_mbps": 7.331463874290989,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.503737046666668,
+        "voice_rtt_p95_ms": 45.720164
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-015-u2-100",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-015-u2-100",
+        "fair-base8-w3-r02-u1-015-u2-100",
+        "fair-base8-w3-r03-u1-015-u2-100"
+      ],
+      "base_scales": {
+        "ue1": 0.15,
+        "ue2": 1.0
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.2222222222222222,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.20220836241611,
+          "voice_rtt_p95_ms_median": 78.865344,
+          "video_offered_mbps_median": 11.35727280192325,
+          "video_delivered_mbps_median": 11.35727280192325
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.055341673333336,
+          "voice_rtt_p95_ms_median": 39.904294,
+          "video_offered_mbps_median": 9.653640651988324,
+          "video_delivered_mbps_median": 9.653640651988324
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.432513926174495,
+          "voice_rtt_p95_ms_median": 39.234528,
+          "video_offered_mbps_median": 7.95005612879228,
+          "video_delivered_mbps_median": 7.95005612879228
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.924309616438356,
+          "voice_rtt_p95_ms_median": 39.384628,
+          "video_offered_mbps_median": 4.964736058342887,
+          "video_delivered_mbps_median": 4.964736058342887
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 11.35727280192325,
+        "video_delivered_mbps": 11.35727280192325,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 8.193377121803774,
+        "ue1_offered_mbps": 1.68,
+        "ue2_offered_mbps": 9.775285165721318,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.20220836241611,
+        "voice_rtt_p95_ms": 78.865344
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-025-u2-015",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-025-u2-015",
+        "fair-base8-w3-r02-u1-025-u2-015",
+        "fair-base8-w3-r03-u1-025-u2-015"
+      ],
+      "base_scales": {
+        "ue1": 0.25,
+        "ue2": 0.15
+      },
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.23542749664429,
+          "voice_rtt_p95_ms_median": 38.04702,
+          "video_offered_mbps_median": 4.102964553029336,
+          "video_delivered_mbps_median": 4.102964553029336
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.139576228187915,
+          "voice_rtt_p95_ms_median": 38.442214,
+          "video_offered_mbps_median": 3.487391834921947,
+          "video_delivered_mbps_median": 3.487391834921947
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.620653013245033,
+          "voice_rtt_p95_ms_median": 38.280328,
+          "video_offered_mbps_median": 2.8719874638350387,
+          "video_delivered_mbps_median": 2.8719874638350387
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.970816621621623,
+          "voice_rtt_p95_ms_median": 38.106104,
+          "video_offered_mbps_median": 2.0321621208790908,
+          "video_delivered_mbps_median": 2.0321621208790908
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 4.102964553029336,
+        "video_delivered_mbps": 4.102964553029336,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 1.1702143664838363,
+        "ue1_offered_mbps": 2.8,
+        "ue2_offered_mbps": 1.4662927748581975,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.23542749664429,
+        "voice_rtt_p95_ms": 38.04702
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-025-u2-025",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-025-u2-025",
+        "fair-base8-w3-r02-u1-025-u2-025",
+        "fair-base8-w3-r03-u1-025-u2-025"
+      ],
+      "base_scales": {
+        "ue1": 0.25,
+        "ue2": 0.25
+      },
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.905204275167787,
+          "voice_rtt_p95_ms_median": 40.915113,
+          "video_offered_mbps_median": 5.6,
+          "video_delivered_mbps_median": 5.6
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.229776486486486,
+          "voice_rtt_p95_ms_median": 57.292134,
+          "video_offered_mbps_median": 4.31836107874858,
+          "video_delivered_mbps_median": 4.31836107874858
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.585513789115645,
+          "voice_rtt_p95_ms_median": 36.424941,
+          "video_offered_mbps_median": 3.9199999999999995,
+          "video_delivered_mbps_median": 3.9199999999999995
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.656927852348993,
+          "voice_rtt_p95_ms_median": 34.724684,
+          "video_offered_mbps_median": 2.0321482781598106,
+          "video_delivered_mbps_median": 2.0321482781598106
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 5.6,
+        "video_delivered_mbps": 5.6,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 0.0,
+        "ue1_offered_mbps": 2.8,
+        "ue2_offered_mbps": 2.8,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.905204275167787,
+        "voice_rtt_p95_ms": 40.915113
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-025-u2-040",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-025-u2-040",
+        "fair-base8-w3-r02-u1-025-u2-040",
+        "fair-base8-w3-r03-u1-025-u2-040"
+      ],
+      "base_scales": {
+        "ue1": 0.25,
+        "ue2": 0.4
+      },
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.244246704697987,
+          "voice_rtt_p95_ms_median": 43.123826,
+          "video_offered_mbps_median": 6.5466656801806655,
+          "video_delivered_mbps_median": 6.5466656801806655
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.580159577181211,
+          "voice_rtt_p95_ms_median": 40.24469,
+          "video_offered_mbps_median": 5.564689407684023,
+          "video_delivered_mbps_median": 5.564689407684023
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.24774076510066,
+          "voice_rtt_p95_ms_median": 38.169651,
+          "video_offered_mbps_median": 4.58266243360136,
+          "video_delivered_mbps_median": 4.58266243360136
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.93191275838926,
+          "voice_rtt_p95_ms_median": 39.497865,
+          "video_offered_mbps_median": 2.912,
+          "video_delivered_mbps_median": 2.912
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 6.5466656801806655,
+        "video_delivered_mbps": 6.5466656801806655,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 1.2735624523963895,
+        "ue1_offered_mbps": 2.8,
+        "ue2_offered_mbps": 3.910114066288527,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.244246704697987,
+        "voice_rtt_p95_ms": 43.123826
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-025-u2-055",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-025-u2-055",
+        "fair-base8-w3-r02-u1-025-u2-055",
+        "fair-base8-w3-r03-u1-025-u2-055"
+      ],
+      "base_scales": {
+        "ue1": 0.25,
+        "ue2": 0.55
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.566124299319728,
+          "voice_rtt_p95_ms_median": 47.733031,
+          "video_offered_mbps_median": 8.012970553218286,
+          "video_delivered_mbps_median": 8.012970553218286
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.293411626666666,
+          "voice_rtt_p95_ms_median": 46.560241,
+          "video_offered_mbps_median": 6.811002314411062,
+          "video_delivered_mbps_median": 6.811002314411062
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.857258418918917,
+          "voice_rtt_p95_ms_median": 51.616925,
+          "video_offered_mbps_median": 5.60905092662845,
+          "video_delivered_mbps_median": 5.60905092662845
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.38312198,
+          "voice_rtt_p95_ms_median": 36.932278,
+          "video_offered_mbps_median": 3.584,
+          "video_delivered_mbps_median": 3.584
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 8.012970553218286,
+        "video_delivered_mbps": 8.012970553218286,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 2.739870299443595,
+        "ue1_offered_mbps": 2.8,
+        "ue2_offered_mbps": 5.376406841146725,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.566124299319728,
+        "voice_rtt_p95_ms": 47.733031
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-025-u2-075",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-025-u2-075",
+        "fair-base8-w3-r02-u1-025-u2-075",
+        "fair-base8-w3-r03-u1-025-u2-075"
+      ],
+      "base_scales": {
+        "ue1": 0.25,
+        "ue2": 0.75
+      },
+      "label": "MEDIUM_70",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.55350132885906,
+          "voice_rtt_p95_ms_median": 45.165171,
+          "video_offered_mbps_median": 9.968036447347185,
+          "video_delivered_mbps_median": 9.968036447347185
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.959520483443708,
+          "voice_rtt_p95_ms_median": 69.495965,
+          "video_offered_mbps_median": 9.52,
+          "video_delivered_mbps_median": 9.52
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.923921382550342,
+          "voice_rtt_p95_ms_median": 39.150451,
+          "video_offered_mbps_median": 6.9776165756587165,
+          "video_delivered_mbps_median": 6.9776165756587165
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.766180966666667,
+          "voice_rtt_p95_ms_median": 38.96529,
+          "video_offered_mbps_median": 4.48,
+          "video_delivered_mbps_median": 4.48
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 9.968036447347185,
+        "video_delivered_mbps": 9.968036447347185,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 4.694918201633878,
+        "ue1_offered_mbps": 2.8,
+        "ue2_offered_mbps": 7.331463874290989,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.55350132885906,
+        "voice_rtt_p95_ms": 45.165171
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-025-u2-100",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-025-u2-100",
+        "fair-base8-w3-r02-u1-025-u2-100",
+        "fair-base8-w3-r03-u1-025-u2-100"
+      ],
+      "base_scales": {
+        "ue1": 0.25,
+        "ue2": 1.0
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.054477228187915,
+          "voice_rtt_p95_ms_median": 84.302363,
+          "video_offered_mbps_median": 12.41188311081994,
+          "video_delivered_mbps_median": 12.41188311081994
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.162539148648644,
+          "voice_rtt_p95_ms_median": 39.136187,
+          "video_offered_mbps_median": 10.55004875713552,
+          "video_delivered_mbps_median": 10.55004875713552
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.290225614864864,
+          "voice_rtt_p95_ms_median": 67.600796,
+          "video_offered_mbps_median": 8.688276402706265,
+          "video_delivered_mbps_median": 8.688276402706265
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.213398812080534,
+          "voice_rtt_p95_ms_median": 37.563246,
+          "video_offered_mbps_median": 4.964727767891161,
+          "video_delivered_mbps_median": 4.964727767891161
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 12.41188311081994,
+        "video_delivered_mbps": 12.41188311081994,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 7.138687220622697,
+        "ue1_offered_mbps": 2.8,
+        "ue2_offered_mbps": 9.775285165721318,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.054477228187915,
+        "voice_rtt_p95_ms": 84.302363
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-040-u2-015",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-040-u2-015",
+        "fair-base8-w3-r02-u1-040-u2-015",
+        "fair-base8-w3-r03-u1-040-u2-015"
+      ],
+      "base_scales": {
+        "ue1": 0.4,
+        "ue2": 0.15
+      },
+      "label": "LIGHT_85",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.864455939189195,
+          "voice_rtt_p95_ms_median": 40.914655,
+          "video_offered_mbps_median": 6.16,
+          "video_delivered_mbps_median": 6.16
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.464529660000004,
+          "voice_rtt_p95_ms_median": 39.815462,
+          "video_offered_mbps_median": 5.236,
+          "video_delivered_mbps_median": 5.236
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.934954195945947,
+          "voice_rtt_p95_ms_median": 39.250229,
+          "video_offered_mbps_median": 3.979345067816987,
+          "video_delivered_mbps_median": 3.979345067816987
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.458521382550332,
+          "voice_rtt_p95_ms_median": 37.126905,
+          "video_offered_mbps_median": 2.6649269385358076,
+          "video_delivered_mbps_median": 2.6649269385358076
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 6.16,
+        "video_delivered_mbps": 6.16,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 2.8,
+        "ue1_offered_mbps": 4.48,
+        "ue2_offered_mbps": 1.68,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.864455939189195,
+        "voice_rtt_p95_ms": 40.914655
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-040-u2-025",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-040-u2-025",
+        "fair-base8-w3-r02-u1-040-u2-025",
+        "fair-base8-w3-r03-u1-040-u2-025"
+      ],
+      "base_scales": {
+        "ue1": 0.4,
+        "ue2": 0.25
+      },
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.665342299999997,
+          "voice_rtt_p95_ms_median": 39.524428,
+          "video_offered_mbps_median": 7.28,
+          "video_delivered_mbps_median": 7.28
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.085162838926175,
+          "voice_rtt_p95_ms_median": 56.344447,
+          "video_offered_mbps_median": 5.662923750155579,
+          "video_delivered_mbps_median": 5.662923750155579
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.672952966442955,
+          "voice_rtt_p95_ms_median": 38.892203,
+          "video_offered_mbps_median": 4.663574519462567,
+          "video_delivered_mbps_median": 4.663574519462567
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.351141506666663,
+          "voice_rtt_p95_ms_median": 34.792873,
+          "video_offered_mbps_median": 2.912,
+          "video_delivered_mbps_median": 2.912
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 7.28,
+        "video_delivered_mbps": 7.28,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 1.68,
+        "ue1_offered_mbps": 4.48,
+        "ue2_offered_mbps": 2.8,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.665342299999997,
+        "voice_rtt_p95_ms": 39.524428
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-040-u2-040",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-040-u2-040",
+        "fair-base8-w3-r02-u1-040-u2-040",
+        "fair-base8-w3-r03-u1-040-u2-040"
+      ],
+      "base_scales": {
+        "ue1": 0.4,
+        "ue2": 0.4
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.914070395973152,
+          "voice_rtt_p95_ms_median": 60.891381,
+          "video_offered_mbps_median": 8.128571757455852,
+          "video_delivered_mbps_median": 8.128571757455852
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.63206279054054,
+          "voice_rtt_p95_ms_median": 52.16975,
+          "video_offered_mbps_median": 6.909324101873732,
+          "video_delivered_mbps_median": 6.909324101873732
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.110218993288592,
+          "voice_rtt_p95_ms_median": 39.663784,
+          "video_offered_mbps_median": 6.271999999999999,
+          "video_delivered_mbps_median": 6.271999999999999
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.210142798657717,
+          "voice_rtt_p95_ms_median": 36.997309,
+          "video_offered_mbps_median": 3.2514672108242997,
+          "video_delivered_mbps_median": 3.2514672108242997
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 8.128571757455852,
+        "video_delivered_mbps": 8.128571757455852,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 0.3083436248787977,
+        "ue1_offered_mbps": 4.48,
+        "ue2_offered_mbps": 3.910114066288527,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.914070395973152,
+        "voice_rtt_p95_ms": 60.891381
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-040-u2-055",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-040-u2-055",
+        "fair-base8-w3-r02-u1-040-u2-055",
+        "fair-base8-w3-r03-u1-040-u2-055"
+      ],
+      "base_scales": {
+        "ue1": 0.4,
+        "ue2": 0.55
+      },
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.783591222972976,
+          "voice_rtt_p95_ms_median": 39.776193,
+          "video_offered_mbps_median": 9.594860912765558,
+          "video_delivered_mbps_median": 9.594860912765558
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.970002913333333,
+          "voice_rtt_p95_ms_median": 41.121706,
+          "video_offered_mbps_median": 8.155772545088665,
+          "video_delivered_mbps_median": 8.155772545088665
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.920691080536912,
+          "voice_rtt_p95_ms_median": 47.400193,
+          "video_offered_mbps_median": 6.716479745811528,
+          "video_delivered_mbps_median": 6.716479745811528
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.196780422818795,
+          "voice_rtt_p95_ms_median": 40.870903,
+          "video_offered_mbps_median": 3.837948753952602,
+          "video_delivered_mbps_median": 3.837948753952602
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 9.594860912765558,
+        "video_delivered_mbps": 9.594860912765558,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 1.1579527695278917,
+        "ue1_offered_mbps": 4.48,
+        "ue2_offered_mbps": 5.376406841146725,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.783591222972976,
+        "voice_rtt_p95_ms": 39.776193
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-040-u2-075",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-040-u2-075",
+        "fair-base8-w3-r02-u1-040-u2-075",
+        "fair-base8-w3-r03-u1-040-u2-075"
+      ],
+      "base_scales": {
+        "ue1": 0.4,
+        "ue2": 0.75
+      },
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.75794603355704,
+          "voice_rtt_p95_ms_median": 49.718038,
+          "video_offered_mbps_median": 11.549956860680867,
+          "video_delivered_mbps_median": 11.549956860680867
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.407438557046973,
+          "voice_rtt_p95_ms_median": 66.094741,
+          "video_offered_mbps_median": 9.81745470517246,
+          "video_delivered_mbps_median": 9.81745470517246
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.511704047297298,
+          "voice_rtt_p95_ms_median": 46.946933,
+          "video_offered_mbps_median": 9.015999999999998,
+          "video_delivered_mbps_median": 9.015999999999998
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 9.973494333333337,
+          "voice_rtt_p95_ms_median": 37.837121,
+          "video_offered_mbps_median": 5.152000000000001,
+          "video_delivered_mbps_median": 5.152000000000001
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 11.549956860680867,
+        "video_delivered_mbps": 11.549956860680867,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 3.1129941336921108,
+        "ue1_offered_mbps": 4.48,
+        "ue2_offered_mbps": 7.331463874290989,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.75794603355704,
+        "voice_rtt_p95_ms": 49.718038
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-040-u2-100",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-040-u2-100",
+        "fair-base8-w3-r02-u1-040-u2-100",
+        "fair-base8-w3-r03-u1-040-u2-100"
+      ],
+      "base_scales": {
+        "ue1": 0.4,
+        "ue2": 1.0
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.398602879194632,
+          "voice_rtt_p95_ms_median": 72.353945,
+          "video_offered_mbps_median": 13.993754151969625,
+          "video_delivered_mbps_median": 13.993754151969625
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.1111111111111111,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.978664040268459,
+          "voice_rtt_p95_ms_median": 98.197627,
+          "video_offered_mbps_median": 11.894703765878454,
+          "video_delivered_mbps_median": 11.894703765878454
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.728212040000006,
+          "voice_rtt_p95_ms_median": 64.134358,
+          "video_offered_mbps_median": 9.795651820832923,
+          "video_delivered_mbps_median": 9.795651820832923
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.168756801324507,
+          "voice_rtt_p95_ms_median": 39.582611,
+          "video_offered_mbps_median": 5.597508594129468,
+          "video_delivered_mbps_median": 5.597508594129468
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 13.993754151969625,
+        "video_delivered_mbps": 13.993754151969625,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 5.556816179473011,
+        "ue1_offered_mbps": 4.48,
+        "ue2_offered_mbps": 9.775285165721318,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.398602879194632,
+        "voice_rtt_p95_ms": 72.353945
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-055-u2-015",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-055-u2-015",
+        "fair-base8-w3-r02-u1-055-u2-015",
+        "fair-base8-w3-r03-u1-055-u2-015"
+      ],
+      "base_scales": {
+        "ue1": 0.55,
+        "ue2": 0.15
+      },
+      "label": "LIGHT_85",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.459143080536913,
+          "voice_rtt_p95_ms_median": 48.533588,
+          "video_offered_mbps_median": 7.84,
+          "video_delivered_mbps_median": 7.84
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.023228597315434,
+          "voice_rtt_p95_ms_median": 38.154542,
+          "video_offered_mbps_median": 6.243220489023177,
+          "video_delivered_mbps_median": 6.243220489023177
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.064730540000003,
+          "voice_rtt_p95_ms_median": 46.265535,
+          "video_offered_mbps_median": 5.487999999999999,
+          "video_delivered_mbps_median": 5.487999999999999
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.193745020000005,
+          "voice_rtt_p95_ms_median": 35.292799,
+          "video_offered_mbps_median": 3.29768722151383,
+          "video_delivered_mbps_median": 3.29768722151383
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 7.84,
+        "video_delivered_mbps": 7.84,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 4.48,
+        "ue1_offered_mbps": 6.16,
+        "ue2_offered_mbps": 1.68,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.459143080536913,
+        "voice_rtt_p95_ms": 48.533588
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-055-u2-025",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-055-u2-025",
+        "fair-base8-w3-r02-u1-055-u2-025",
+        "fair-base8-w3-r03-u1-055-u2-025"
+      ],
+      "base_scales": {
+        "ue1": 0.55,
+        "ue2": 0.25
+      },
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.619804135135137,
+          "voice_rtt_p95_ms_median": 39.940793,
+          "video_offered_mbps_median": 8.96,
+          "video_delivered_mbps_median": 8.96
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.716881178082192,
+          "voice_rtt_p95_ms_median": 71.867696,
+          "video_offered_mbps_median": 7.007578631201345,
+          "video_delivered_mbps_median": 7.007578631201345
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.742903154362416,
+          "voice_rtt_p95_ms_median": 38.255239,
+          "video_offered_mbps_median": 6.271999999999999,
+          "video_delivered_mbps_median": 6.271999999999999
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.549142209459458,
+          "voice_rtt_p95_ms_median": 38.65127,
+          "video_offered_mbps_median": 3.2976890356828887,
+          "video_delivered_mbps_median": 3.2976890356828887
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 8.96,
+        "video_delivered_mbps": 8.96,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 3.36,
+        "ue1_offered_mbps": 6.16,
+        "ue2_offered_mbps": 2.8,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.619804135135137,
+        "voice_rtt_p95_ms": 39.940793
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-055-u2-040",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-055-u2-040",
+        "fair-base8-w3-r02-u1-055-u2-040",
+        "fair-base8-w3-r03-u1-055-u2-040"
+      ],
+      "base_scales": {
+        "ue1": 0.55,
+        "ue2": 0.4
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.848106222222226,
+          "voice_rtt_p95_ms_median": 50.905918,
+          "video_offered_mbps_median": 10.64,
+          "video_delivered_mbps_median": 10.64
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.139912959459451,
+          "voice_rtt_p95_ms_median": 44.63408,
+          "video_offered_mbps_median": 8.253924350986921,
+          "video_delivered_mbps_median": 8.253924350986921
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.091536812080536,
+          "voice_rtt_p95_ms_median": 41.401601,
+          "video_offered_mbps_median": 6.79734463152799,
+          "video_delivered_mbps_median": 6.79734463152799
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.469637067114096,
+          "voice_rtt_p95_ms_median": 49.630221,
+          "video_offered_mbps_median": 4.256,
+          "video_delivered_mbps_median": 4.256
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 10.64,
+        "video_delivered_mbps": 10.64,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 1.68,
+        "ue1_offered_mbps": 6.16,
+        "ue2_offered_mbps": 4.48,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.848106222222226,
+        "voice_rtt_p95_ms": 50.905918
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-055-u2-055",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-055-u2-055",
+        "fair-base8-w3-r02-u1-055-u2-055",
+        "fair-base8-w3-r03-u1-055-u2-055"
+      ],
+      "base_scales": {
+        "ue1": 0.55,
+        "ue2": 0.55
+      },
+      "label": "LIGHT_85",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.610720648648641,
+          "voice_rtt_p95_ms_median": 67.100754,
+          "video_offered_mbps_median": 11.176776470550728,
+          "video_delivered_mbps_median": 11.176776470550728
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.450237489932887,
+          "voice_rtt_p95_ms_median": 40.355045,
+          "video_offered_mbps_median": 9.5002977581332,
+          "video_delivered_mbps_median": 9.5002977581332
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.1520868590604,
+          "voice_rtt_p95_ms_median": 45.915644,
+          "video_offered_mbps_median": 8.623999999999999,
+          "video_delivered_mbps_median": 8.623999999999999
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.523503778523486,
+          "voice_rtt_p95_ms_median": 67.922906,
+          "video_offered_mbps_median": 4.928,
+          "video_delivered_mbps_median": 4.928
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 11.176776470550728,
+        "video_delivered_mbps": 11.176776470550728,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 0.4239228522073394,
+        "ue1_offered_mbps": 6.16,
+        "ue2_offered_mbps": 5.376406841146725,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.610720648648641,
+        "voice_rtt_p95_ms": 67.100754
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-055-u2-075",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-055-u2-075",
+        "fair-base8-w3-r02-u1-055-u2-075",
+        "fair-base8-w3-r03-u1-055-u2-075"
+      ],
+      "base_scales": {
+        "ue1": 0.55,
+        "ue2": 0.75
+      },
+      "label": "MEDIUM_70",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.1111111111111111,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.397955228187914,
+          "voice_rtt_p95_ms_median": 82.214095,
+          "video_offered_mbps_median": 13.131910943492297,
+          "video_delivered_mbps_median": 13.131910943492297
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.1111111111111111,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.64358379865772,
+          "voice_rtt_p95_ms_median": 112.817663,
+          "video_offered_mbps_median": 11.162114881561196,
+          "video_delivered_mbps_median": 11.162114881561196
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 9.85390262162162,
+          "voice_rtt_p95_ms_median": 38.975207,
+          "video_offered_mbps_median": 9.192313893811617,
+          "video_delivered_mbps_median": 9.192313893811617
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 1.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.237518221476513,
+          "voice_rtt_p95_ms_median": 38.764802,
+          "video_offered_mbps_median": 5.252809038715184,
+          "video_delivered_mbps_median": 5.252809038715184
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 13.131910943492297,
+        "video_delivered_mbps": 13.131910943492297,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 1.5310168050896804,
+        "ue1_offered_mbps": 6.16,
+        "ue2_offered_mbps": 7.331463874290989,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.397955228187914,
+        "voice_rtt_p95_ms": 82.214095
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-055-u2-100",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-055-u2-100",
+        "fair-base8-w3-r02-u1-055-u2-100",
+        "fair-base8-w3-r03-u1-055-u2-100"
+      ],
+      "base_scales": {
+        "ue1": 0.55,
+        "ue2": 1.0
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.44112226845638,
+          "voice_rtt_p95_ms_median": 82.881885,
+          "video_offered_mbps_median": 15.575686522305798,
+          "video_delivered_mbps_median": 15.575686522305798
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.2222222222222222,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.984831006666662,
+          "voice_rtt_p95_ms_median": 86.635033,
+          "video_offered_mbps_median": 13.239347035029983,
+          "video_delivered_mbps_median": 13.239347035029983
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.826613644295305,
+          "voice_rtt_p95_ms_median": 55.248894,
+          "video_offered_mbps_median": 10.9029818676957,
+          "video_delivered_mbps_median": 10.9029818676957
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.145884547297296,
+          "voice_rtt_p95_ms_median": 39.081409,
+          "video_offered_mbps_median": 6.230283961272491,
+          "video_delivered_mbps_median": 6.230283961272491
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 15.575686522305798,
+        "video_delivered_mbps": 15.575686522305798,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 3.9748838091368377,
+        "ue1_offered_mbps": 6.16,
+        "ue2_offered_mbps": 9.775285165721318,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.44112226845638,
+        "voice_rtt_p95_ms": 82.881885
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-075-u2-015",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-075-u2-015",
+        "fair-base8-w3-r02-u1-075-u2-015",
+        "fair-base8-w3-r03-u1-075-u2-015"
+      ],
+      "base_scales": {
+        "ue1": 0.75,
+        "ue2": 0.15
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.325405127516781,
+          "voice_rtt_p95_ms_median": 42.846326,
+          "video_offered_mbps_median": 9.584965281203736,
+          "video_delivered_mbps_median": 9.584965281203736
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.2222222222222222,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.680050912751677,
+          "voice_rtt_p95_ms_median": 87.762309,
+          "video_offered_mbps_median": 8.147220489023177,
+          "video_delivered_mbps_median": 8.147220489023177
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.837436577181203,
+          "voice_rtt_p95_ms_median": 45.405287,
+          "video_offered_mbps_median": 6.709475696842616,
+          "video_delivered_mbps_median": 6.709475696842616
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.683565606666665,
+          "voice_rtt_p95_ms_median": 38.635434,
+          "video_offered_mbps_median": 4.149976854135826,
+          "video_delivered_mbps_median": 4.149976854135826
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 9.584965281203736,
+        "video_delivered_mbps": 9.584965281203736,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 6.719999999999998,
+        "ue1_offered_mbps": 8.399999999999999,
+        "ue2_offered_mbps": 1.4662927748581975,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.325405127516781,
+        "voice_rtt_p95_ms": 42.846326
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-075-u2-025",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-075-u2-025",
+        "fair-base8-w3-r02-u1-075-u2-025",
+        "fair-base8-w3-r03-u1-075-u2-025"
+      ],
+      "base_scales": {
+        "ue1": 0.75,
+        "ue2": 0.25
+      },
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.70042771621622,
+          "voice_rtt_p95_ms_median": 49.993613,
+          "video_offered_mbps_median": 10.374942135339563,
+          "video_delivered_mbps_median": 10.374942135339563
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.582678046979858,
+          "voice_rtt_p95_ms_median": 86.636946,
+          "video_offered_mbps_median": 8.818700815038627,
+          "video_delivered_mbps_median": 8.818700815038627
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.49885712751678,
+          "voice_rtt_p95_ms_median": 40.509154,
+          "video_offered_mbps_median": 7.262459494737693,
+          "video_delivered_mbps_median": 7.262459494737693
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 9.740465986666665,
+          "voice_rtt_p95_ms_median": 35.770132,
+          "video_offered_mbps_median": 4.149976854135826,
+          "video_delivered_mbps_median": 4.149976854135826
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 10.374942135339563,
+        "video_delivered_mbps": 10.374942135339563,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 5.599999999999998,
+        "ue1_offered_mbps": 8.399999999999999,
+        "ue2_offered_mbps": 2.4438212914303294,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 10.70042771621622,
+        "voice_rtt_p95_ms": 49.993613
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-075-u2-040",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-075-u2-040",
+        "fair-base8-w3-r02-u1-075-u2-040",
+        "fair-base8-w3-r03-u1-075-u2-040"
+      ],
+      "base_scales": {
+        "ue1": 0.75,
+        "ue2": 0.4
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.828529442176869,
+          "voice_rtt_p95_ms_median": 95.45021,
+          "video_offered_mbps_median": 11.819774402992024,
+          "video_delivered_mbps_median": 11.819774402992024
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.020567702702705,
+          "voice_rtt_p95_ms_median": 85.122372,
+          "video_offered_mbps_median": 10.948,
+          "video_delivered_mbps_median": 10.948
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.962860812080542,
+          "voice_rtt_p95_ms_median": 78.453335,
+          "video_offered_mbps_median": 8.273811514565534,
+          "video_delivered_mbps_median": 8.273811514565534
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.017111173333339,
+          "voice_rtt_p95_ms_median": 39.272282,
+          "video_offered_mbps_median": 4.72794566562333,
+          "video_delivered_mbps_median": 4.72794566562333
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 11.819774402992024,
+        "video_delivered_mbps": 11.819774402992024,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 3.9994593054472394,
+        "ue1_offered_mbps": 8.399999999999999,
+        "ue2_offered_mbps": 3.910114066288527,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.828529442176869,
+        "voice_rtt_p95_ms": 95.45021
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-075-u2-055",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-075-u2-055",
+        "fair-base8-w3-r02-u1-075-u2-055",
+        "fair-base8-w3-r03-u1-075-u2-055"
+      ],
+      "base_scales": {
+        "ue1": 0.75,
+        "ue2": 0.55
+      },
+      "label": "EQUAL_100",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.12817351351351,
+          "voice_rtt_p95_ms_median": 54.168271,
+          "video_offered_mbps_median": 13.286076877736177,
+          "video_delivered_mbps_median": 13.286076877736177
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.791503369127511,
+          "voice_rtt_p95_ms_median": 68.824403,
+          "video_offered_mbps_median": 11.293162447807452,
+          "video_delivered_mbps_median": 11.293162447807452
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.1111111111111111,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.891407322147648,
+          "voice_rtt_p95_ms_median": 80.623736,
+          "video_offered_mbps_median": 9.30050595067035,
+          "video_delivered_mbps_median": 9.30050595067035
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.329083371621623,
+          "voice_rtt_p95_ms_median": 38.808638,
+          "video_offered_mbps_median": 5.824,
+          "video_delivered_mbps_median": 5.824
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 13.286076877736177,
+        "video_delivered_mbps": 13.286076877736177,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 2.5332631954427276,
+        "ue1_offered_mbps": 8.399999999999999,
+        "ue2_offered_mbps": 5.376406841146725,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.12817351351351,
+        "voice_rtt_p95_ms": 54.168271
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-075-u2-075",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-075-u2-075",
+        "fair-base8-w3-r02-u1-075-u2-075",
+        "fair-base8-w3-r03-u1-075-u2-075"
+      ],
+      "base_scales": {
+        "ue1": 0.75,
+        "ue2": 0.75
+      },
+      "label": "MEDIUM_70",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.527229664429532,
+          "voice_rtt_p95_ms_median": 48.154322,
+          "video_offered_mbps_median": 15.241035444084286,
+          "video_delivered_mbps_median": 15.241035444084286
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.369349765100667,
+          "voice_rtt_p95_ms_median": 46.343804,
+          "video_offered_mbps_median": 12.954952193687987,
+          "video_delivered_mbps_median": 12.954952193687987
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.737844081081086,
+          "voice_rtt_p95_ms_median": 41.347567,
+          "video_offered_mbps_median": 10.668794044029868,
+          "video_delivered_mbps_median": 10.668794044029868
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.410958322147655,
+          "voice_rtt_p95_ms_median": 44.215774,
+          "video_offered_mbps_median": 6.720000000000001,
+          "video_delivered_mbps_median": 6.720000000000001
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 15.241035444084286,
+        "video_delivered_mbps": 15.241035444084286,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 0.5781076955023082,
+        "ue1_offered_mbps": 8.399999999999999,
+        "ue2_offered_mbps": 7.331463874290989,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.527229664429532,
+        "voice_rtt_p95_ms": 48.154322
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-075-u2-100",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-075-u2-100",
+        "fair-base8-w3-r02-u1-075-u2-100",
+        "fair-base8-w3-r03-u1-075-u2-100"
+      ],
+      "base_scales": {
+        "ue1": 0.75,
+        "ue2": 1.0
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.1111111111111111,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 14.120790583333344,
+          "voice_rtt_p95_ms_median": 103.226023,
+          "video_offered_mbps_median": 17.68494565678639,
+          "video_delivered_mbps_median": 17.68494565678639
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.828240412162167,
+          "voice_rtt_p95_ms_median": 62.33484,
+          "video_offered_mbps_median": 15.032214274819292,
+          "video_delivered_mbps_median": 15.032214274819292
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.533938148648655,
+          "voice_rtt_p95_ms_median": 95.048598,
+          "video_offered_mbps_median": 12.379607108766638,
+          "video_delivered_mbps_median": 12.379607108766638
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.870494179999996,
+          "voice_rtt_p95_ms_median": 58.428197,
+          "video_offered_mbps_median": 7.84,
+          "video_delivered_mbps_median": 7.84
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 17.68494565678639,
+        "video_delivered_mbps": 17.68494565678639,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 1.865624674656246,
+        "ue1_offered_mbps": 8.399999999999999,
+        "ue2_offered_mbps": 9.775285165721318,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 14.120790583333344,
+        "voice_rtt_p95_ms": 103.226023
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-100-u2-015",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-100-u2-015",
+        "fair-base8-w3-r02-u1-100-u2-015",
+        "fair-base8-w3-r03-u1-100-u2-015"
+      ],
+      "base_scales": {
+        "ue1": 1.0,
+        "ue2": 0.15
+      },
+      "label": "MEDIUM_70",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 13.084225128378373,
+          "voice_rtt_p95_ms_median": 104.726925,
+          "video_offered_mbps_median": 12.384965281203737,
+          "video_delivered_mbps_median": 12.384965281203737
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.1111111111111111,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.637206932432433,
+          "voice_rtt_p95_ms_median": 85.469269,
+          "video_offered_mbps_median": 10.527220489023177,
+          "video_delivered_mbps_median": 10.527220489023177
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.036510644295303,
+          "voice_rtt_p95_ms_median": 40.072015,
+          "video_offered_mbps_median": 8.669475696842616,
+          "video_delivered_mbps_median": 8.669475696842616
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.854815469798654,
+          "voice_rtt_p95_ms_median": 38.949516,
+          "video_offered_mbps_median": 5.269976854135825,
+          "video_delivered_mbps_median": 5.269976854135825
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 12.384965281203737,
+        "video_delivered_mbps": 12.384965281203737,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 9.52,
+        "ue1_offered_mbps": 11.2,
+        "ue2_offered_mbps": 1.4662927748581975,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 13.084225128378373,
+        "voice_rtt_p95_ms": 104.726925
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-100-u2-025",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-100-u2-025",
+        "fair-base8-w3-r02-u1-100-u2-025",
+        "fair-base8-w3-r03-u1-100-u2-025"
+      ],
+      "base_scales": {
+        "ue1": 1.0,
+        "ue2": 0.25
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.051061865771814,
+          "voice_rtt_p95_ms_median": 73.087104,
+          "video_offered_mbps_median": 13.174942135339563,
+          "video_delivered_mbps_median": 13.174942135339563
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.7906747,
+          "voice_rtt_p95_ms_median": 80.194051,
+          "video_offered_mbps_median": 11.19870081503863,
+          "video_delivered_mbps_median": 11.19870081503863
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.555512624161071,
+          "voice_rtt_p95_ms_median": 46.430415,
+          "video_offered_mbps_median": 9.222459494737693,
+          "video_delivered_mbps_median": 9.222459494737693
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.315469429530202,
+          "voice_rtt_p95_ms_median": 37.474707,
+          "video_offered_mbps_median": 5.269976854135825,
+          "video_delivered_mbps_median": 5.269976854135825
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 13.174942135339563,
+        "video_delivered_mbps": 13.174942135339563,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 8.4,
+        "ue1_offered_mbps": 11.2,
+        "ue2_offered_mbps": 2.4438212914303294,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.051061865771814,
+        "voice_rtt_p95_ms": 73.087104
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-100-u2-040",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-100-u2-040",
+        "fair-base8-w3-r02-u1-100-u2-040",
+        "fair-base8-w3-r03-u1-100-u2-040"
+      ],
+      "base_scales": {
+        "ue1": 1.0,
+        "ue2": 0.4
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.8396896375839,
+          "voice_rtt_p95_ms_median": 112.413375,
+          "video_offered_mbps_median": 14.456695381850066,
+          "video_delivered_mbps_median": 14.456695381850066
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.317956298611115,
+          "voice_rtt_p95_ms_median": 93.382127,
+          "video_offered_mbps_median": 13.328,
+          "video_delivered_mbps_median": 13.328
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.883498675675671,
+          "voice_rtt_p95_ms_median": 75.745749,
+          "video_offered_mbps_median": 10.119427125902781,
+          "video_delivered_mbps_median": 10.119427125902781
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.6666666666666666,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.4740710067114,
+          "voice_rtt_p95_ms_median": 45.958903,
+          "video_offered_mbps_median": 6.272,
+          "video_delivered_mbps_median": 6.272
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 14.456695381850066,
+        "video_delivered_mbps": 14.456695381850066,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 6.72,
+        "ue1_offered_mbps": 11.2,
+        "ue2_offered_mbps": 3.910114066288527,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.8396896375839,
+        "voice_rtt_p95_ms": 112.413375
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-100-u2-055",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-100-u2-055",
+        "fair-base8-w3-r02-u1-100-u2-055",
+        "fair-base8-w3-r03-u1-100-u2-055"
+      ],
+      "base_scales": {
+        "ue1": 1.0,
+        "ue2": 0.55
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.2222222222222222,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.886360553333335,
+          "voice_rtt_p95_ms_median": 100.703734,
+          "video_offered_mbps_median": 15.922589436894137,
+          "video_delivered_mbps_median": 15.922589436894137
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.283214682432428,
+          "voice_rtt_p95_ms_median": 86.886239,
+          "video_offered_mbps_median": 13.534198180599063,
+          "video_delivered_mbps_median": 13.534198180599063
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.2222222222222222,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.651561186666665,
+          "voice_rtt_p95_ms_median": 111.645896,
+          "video_offered_mbps_median": 12.151999999999997,
+          "video_delivered_mbps_median": 12.151999999999997
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.5555555555555556,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.962178174496644,
+          "voice_rtt_p95_ms_median": 46.513569,
+          "video_offered_mbps_median": 6.369079933096178,
+          "video_delivered_mbps_median": 6.369079933096178
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 15.922589436894137,
+        "video_delivered_mbps": 15.922589436894137,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 5.169775754600686,
+        "ue1_offered_mbps": 11.2,
+        "ue2_offered_mbps": 5.376406841146725,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 12.886360553333335,
+        "voice_rtt_p95_ms": 100.703734
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-100-u2-075",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-100-u2-075",
+        "fair-base8-w3-r02-u1-100-u2-075",
+        "fair-base8-w3-r03-u1-100-u2-075"
+      ],
+      "base_scales": {
+        "ue1": 1.0,
+        "ue2": 0.75
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.589504684563753,
+          "voice_rtt_p95_ms_median": 76.52584,
+          "video_offered_mbps_median": 17.877590022468855,
+          "video_delivered_mbps_median": 17.877590022468855
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.87787794630873,
+          "voice_rtt_p95_ms_median": 58.65732,
+          "video_offered_mbps_median": 15.19620090184982,
+          "video_delivered_mbps_median": 15.19620090184982
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.3333333333333333,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.890447818791943,
+          "voice_rtt_p95_ms_median": 98.047604,
+          "video_offered_mbps_median": 12.514391158504427,
+          "video_delivered_mbps_median": 12.514391158504427
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.7777777777777778,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.915582805369132,
+          "voice_rtt_p95_ms_median": 39.103292,
+          "video_offered_mbps_median": 7.151098383867881,
+          "video_delivered_mbps_median": 7.151098383867881
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 17.877590022468855,
+        "video_delivered_mbps": 17.877590022468855,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 3.2146622738868773,
+        "ue1_offered_mbps": 11.2,
+        "ue2_offered_mbps": 7.331463874290989,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 11.589504684563753,
+        "voice_rtt_p95_ms": 76.52584
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    },
+    {
+      "scenario_id": "load-u1-100-u2-100",
+      "rounds": [
+        1,
+        2,
+        3
+      ],
+      "source_scenarios": [
+        "fair-base8-w3-r01-u1-100-u2-100",
+        "fair-base8-w3-r02-u1-100-u2-100",
+        "fair-base8-w3-r03-u1-100-u2-100"
+      ],
+      "base_scales": {
+        "ue1": 1.0,
+        "ue2": 1.0
+      },
+      "label": "STRONG_40",
+      "outcomes": {
+        "EQUAL_100": {
+          "samples": 9,
+          "sla_success_ratio": 0.0,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 13.02251547096774,
+          "voice_rtt_p95_ms_median": 98.568519,
+          "video_offered_mbps_median": 20.321391537988788,
+          "video_delivered_mbps_median": 20.321391537988788
+        },
+        "LIGHT_85": {
+          "samples": 9,
+          "sla_success_ratio": 0.1111111111111111,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 12.156653932885908,
+          "voice_rtt_p95_ms_median": 95.396445,
+          "video_offered_mbps_median": 17.273177291298573,
+          "video_delivered_mbps_median": 17.273177291298573
+        },
+        "MEDIUM_70": {
+          "samples": 9,
+          "sla_success_ratio": 0.4444444444444444,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 11.58382697986577,
+          "voice_rtt_p95_ms_median": 72.907704,
+          "video_offered_mbps_median": 14.225142168965165,
+          "video_delivered_mbps_median": 14.225142168965165
+        },
+        "STRONG_40": {
+          "samples": 9,
+          "sla_success_ratio": 0.8888888888888888,
+          "voice_delivery_ratio_median": 1.0,
+          "voice_loss_percent_median": 0.0,
+          "voice_jitter_ms_median": 10.835001386666665,
+          "voice_rtt_p95_ms_median": 41.053003,
+          "video_offered_mbps_median": 8.128593821421145,
+          "video_delivered_mbps_median": 8.128593821421145
+        }
+      },
+      "baseline_features": {
+        "video_offered_mbps": 20.321391537988788,
+        "video_delivered_mbps": 20.321391537988788,
+        "video_delivery_ratio": 1.0,
+        "video_gap_mbps": 0.0,
+        "video_worst_delivery_ratio": 1.0,
+        "video_imbalance_mbps": 0.7708212065461538,
+        "ue1_offered_mbps": 11.2,
+        "ue2_offered_mbps": 9.775285165721318,
+        "voice_delivery_ratio": 1.0,
+        "voice_loss_percent": 0.0,
+        "voice_jitter_ms": 13.02251547096774,
+        "voice_rtt_p95_ms": 98.568519
+      },
+      "relabelled_sla": {
+        "delivery_ratio_min": 0.95,
+        "loss_percent_max": 2.0,
+        "jitter_ms_max": 30.0,
+        "rtt_p95_ms_max": 60.0
+      },
+      "aggregation": "all repeated rounds for this offered-load pair"
+    }
+  ]
+}
