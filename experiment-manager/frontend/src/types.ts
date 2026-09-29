@@ -7,6 +7,7 @@ export type Platform = {
   mongodb: boolean
   prometheus: boolean
   grafana: boolean
+  kpm_exporter?: boolean
   ports: Record<string, boolean>
 }
 
@@ -174,4 +175,16 @@ export type VoiceGuardStatus = {
   ue_mapping?: Record<string, number>
   ues?: Record<string, VoiceGuardUE>
   events?: Array<{ timestamp: number; type: string; message: string }>
+}
+
+export type KpmValues = Record<string, number | null>
+
+export type KpmSnapshot = {
+  run_id: string
+  source: 'e2sm-kpm'
+  ue_mapping: string
+  collector: { running: boolean; starts: number; last_error: string | null }
+  subscriptions: Array<{ report_style: number; success: boolean; measurements: number; period_ms: number }>
+  cell: { age_seconds: number | null; stale: boolean; values: KpmValues } | null
+  ues: Array<{ gnb_cu_ue_f1ap_id: number | null; ue: string; age_seconds: number | null; stale: boolean; values: KpmValues }>
 }

@@ -33,6 +33,9 @@ GNB_CONFIG = LAB / "config/ocudu/gnb-fdd-srsue-zmq-open5gs-multiue.yml"
 SRSUE = LAB / "src/srsRAN_4G/build/srsue/src/srsue"
 UE_CONFIG_DIR = LAB / "config/srsue/multiue"
 BROKER = LAB / "radio/broker/build/multi_ue_scenario.py"
+KPM_COLLECTOR = LAB / "src/flexric/build/examples/xApp/c/oranlab_kpm/oranlab_kpm"
+KPM_EXPORTER = LAB / "monitoring/exporters/kpm_exporter.py"
+KPM_EXPORTER_PORT = 9106
 EXPERIMENTS_ROOT = LAB / "experiments" / "runs"
 ACTIVE_CONFIG = EXPERIMENTS_ROOT / "active-run.json"
 
@@ -95,15 +98,42 @@ def write_registry(registry: dict[str, dict[str, Any]]) -> None:
     temporary.replace(PID_FILE)
 
 
-def process_info(pid: int) -> dict[str, Any]:
+def process_info(pid: int, expected: list[str] | None = None) -> dict[str, Any]:
+    """Describe a registered PID.
+
+    A PID only counts as ours when its command line still equals the command
+    recorded at start.  After a reboot or crash the recorded PIDs can belong
+    to unrelated processes, which must never be reported as lab components
+    or signalled by stop().
+    """
     proc = Path(f"/proc/{pid}")
-    if not proc.exists():
-        return {"pid": pid, "running": False}
     try:
-        command = (proc / "cmdline").read_bytes().replace(b"\0", b" ").decode().strip()
+        argv = [part.decode(errors="replace") for part in (proc / "cmdline").read_bytes().split(b"\0") if part]
     except OSError:
-        command = ""
+        return {"pid": pid, "running": False}
+    command = " ".join(argv)
+    if expected is not None and argv not in command_forms([str(part) for part in expected]):
+        return {"pid": pid, "running": False, "stale_pid_reused_by": command}
     return {"pid": pid, "running": True, "command": command}
+
+
+def command_forms(command: list[str]) -> list[list[str]]:
+    """Command lines a registered PID may legitimately show.
+
+    ``runuser`` may stay as the parent or exec the inner command, and
+    ``stdbuf`` always execs its target, which replaces /proc/PID/cmdline.
+    """
+    forms = [command]
+    if command[:2] == ["runuser", "-u"] and "--" in command:
+        forms.append(command[command.index("--") + 1:])
+    for form in list(forms):
+        if form[:1] == ["/usr/bin/stdbuf"]:
+            forms.append([part for part in form[1:] if part not in {"-oL", "-eL"}])
+    return forms
+
+
+def registered_info(meta: dict[str, Any]) -> dict[str, Any]:
+    return process_info(int(meta["pid"]), meta.get("command"))
 
 
 def port_in_use(port: int) -> bool:
@@ -140,7 +170,7 @@ def http_ready(host: str, port: int, path: str = "/") -> bool:
 
 def platform_status() -> dict[str, Any]:
     registry = read_registry()
-    components = {name: process_info(int(meta["pid"])) for name, meta in registry.items()}
+    components = {name: registered_info(meta) for name, meta in registry.items()}
     return {
         "state": "RUNNING" if any(item["running"] for item in components.values()) else "STOPPED",
         "components": components,
@@ -151,6 +181,7 @@ def platform_status() -> dict[str, Any]:
         "mongodb": docker_running("open5gs-mongodb"),
         "prometheus": http_ready("127.0.0.1", 9095, "/-/ready"),
         "grafana": http_ready("127.0.0.1", 3001, "/api/health"),
+        "kpm_exporter": http_ready("127.0.0.1", KPM_EXPORTER_PORT, "/metrics"),
         "ports": {str(port): port_in_use(port) for port in ZMQ_PORTS},
     }
 
@@ -208,7 +239,7 @@ def preflight(config: dict[str, Any] | None = None) -> dict[str, Any]:
     for unit in ("open5gs-nrfd", "open5gs-amfd", "open5gs-smfd", "open5gs-upfd"):
         add(unit, systemd_active(unit), unit)
     registry = read_registry()
-    registered_running = any(process_info(int(meta["pid"]))["running"] for meta in registry.values())
+    registered_running = any(registered_info(meta)["running"] for meta in registry.values())
     add("manager-not-running", not registered_running, "No registered experiment processes")
     required_ports = [2000, 2001]
     required_ports.extend(
@@ -218,6 +249,10 @@ def preflight(config: dict[str, Any] | None = None) -> dict[str, Any]:
     )
     busy = [port for port in required_ports if port_in_use(port)]
     add("zmq-ports", not busy, f"busy={busy}" if busy else "all free")
+    if kpm_enabled():
+        kpm_busy = port_in_use(KPM_EXPORTER_PORT)
+        add("kpm-exporter-port", not kpm_busy,
+            f"{KPM_EXPORTER_PORT} busy" if kpm_busy else f"{KPM_EXPORTER_PORT} free")
     free_gb = shutil.disk_usage(LAB).free / (1024**3)
     add("disk-space", free_gb >= 10, f"{free_gb:.1f} GiB free")
     return {"ok": all(item["status"] == "pass" for item in checks), "checks": checks}
@@ -321,6 +356,11 @@ def start_component(component: Component, registry: dict[str, dict[str, Any]]) -
     write_registry(registry)
 
 
+def kpm_enabled() -> bool:
+    """The E2 KPM observation path is optional: a missing build never blocks the radio stack."""
+    return os.access(KPM_COLLECTOR, os.X_OK) and KPM_EXPORTER.is_file()
+
+
 def components(config: dict[str, Any]) -> list[Component]:
     line_buffered = ["/usr/bin/stdbuf", "-oL", "-eL"]
     items = [
@@ -347,6 +387,22 @@ def components(config: dict[str, Any]) -> list[Component]:
             environment={"QT_QPA_PLATFORM": "offscreen"},
         ),
     ]
+    if kpm_enabled():
+        # Started after the gNB reports its E2 connection, so the collector's
+        # subscriptions reach the node.  UEs attaching later appear in the
+        # UE-level (Style 4) reports automatically.
+        items.append(Component(
+            "kpm",
+            ["/usr/bin/python3", str(KPM_EXPORTER)],
+            LAB,
+            LOG_DIR / "kpm.log",
+            run_as_user="zju",
+            environment={
+                "ORAN_LAB_ROOT": str(LAB),
+                "ORANLAB_KPM_COLLECTOR": str(KPM_COLLECTOR),
+                "PORT": str(KPM_EXPORTER_PORT),
+            },
+        ))
     for slot, ue_config in zip(config["ue_slots"], config["ue_configs"]):
         items.append(Component(
             f"ue{slot}",
@@ -421,6 +477,16 @@ def start() -> dict[str, Any]:
         raise
 
 
+def group_alive(pgid: int) -> bool:
+    try:
+        os.killpg(pgid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
 def terminate_groups(pids: list[int], timeout: float = 4.0) -> None:
     """Stop component process groups concurrently.
 
@@ -436,7 +502,9 @@ def terminate_groups(pids: list[int], timeout: float = 4.0) -> None:
             continue
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline and remaining:
-        remaining = {pid for pid in remaining if Path(f"/proc/{pid}").exists()}
+        # Track the whole process group, not only its leader: a wrapper such
+        # as runuser can exit first and leave a child that is still stopping.
+        remaining = {pid for pid in remaining if group_alive(pid)}
         time.sleep(0.2)
     for pid in remaining:
         try:
@@ -453,10 +521,17 @@ def stop(remove_active_config: bool = True) -> dict[str, Any]:
         key=lambda name: int(name[2:]),
         reverse=True,
     )
+    live = {
+        name: int(meta["pid"])
+        for name, meta in registry.items()
+        if registered_info(meta)["running"]
+    }
+    # The KPM collector is stopped on its own first, while the RIC and gNB
+    # are still up, so its E2 Subscription Delete can be answered.
+    if "kpm" in live:
+        terminate_groups([live["kpm"]], timeout=5.0)
     order = ["broker", *ue_components, "gnb", "nearRT-RIC"]
-    terminate_groups([
-        int(registry[name]["pid"]) for name in order if name in registry
-    ])
+    terminate_groups([live[name] for name in order if name in live])
     for fifo in RUN_DIR.glob("*.stdin"):
         fifo.unlink(missing_ok=True)
     ADMISSION_STAGE_FILE.unlink(missing_ok=True)

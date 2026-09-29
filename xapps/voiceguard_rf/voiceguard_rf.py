@@ -80,6 +80,62 @@ def metric_values(manager_url: str, run_id: str, metric: str) -> dict[str, float
     }
 
 
+def kpm_observation(manager_url: str, run_id: str) -> dict[str, Any]:
+    """Latest E2SM-KPM view of the cell and each UE, as received over E2.
+
+    This is an observation path only: the RF feature schema is unchanged, so
+    trained models stay valid.  Failures never stop the control loop.
+    """
+    try:
+        payload = get_json(f"{manager_url}/api/runs/{run_id}/kpm")
+    except (HTTPError, URLError, TimeoutError, ValueError) as error:
+        return {"available": False, "error": str(error)}
+    keys = (
+        "thp_dl_kbps", "thp_ul_kbps", "prb_used_dl", "prb_used_ul",
+        "rlc_sdu_delay_dl_ms", "rlc_delay_ul_ms", "rlc_drop_rate_dl_percent",
+    )
+    ues = {}
+    for item in payload.get("ues", []):
+        if item.get("stale"):
+            continue
+        values = item.get("values") or {}
+        name = item.get("ue") or "unknown"
+        if name == "unknown":
+            name = f"f1ap{item.get('gnb_cu_ue_f1ap_id')}"
+        ues[name] = {
+            "gnb_cu_ue_f1ap_id": item.get("gnb_cu_ue_f1ap_id"),
+            **{key: values.get(key) for key in keys},
+        }
+    cell = payload.get("cell") or {}
+    cell_values = cell.get("values") or {}
+    return {
+        "available": True,
+        "source": "e2sm-kpm",
+        "ue_mapping": payload.get("ue_mapping"),
+        "cell": None if not cell or cell.get("stale") else {
+            key: cell_values.get(key)
+            for key in ("thp_dl_kbps", "thp_ul_kbps", "prb_util_dl_percent", "prb_util_ul_percent")
+        },
+        "ues": ues,
+    }
+
+
+def observed_f1ap_ids(manager_url: str, run_id: str, attempts: int = 5) -> list[int]:
+    """F1AP IDs of the UEs the gNB currently reports over E2 KPM."""
+    for attempt in range(attempts):
+        observation = kpm_observation(manager_url, run_id)
+        ids = sorted({
+            int(item["gnb_cu_ue_f1ap_id"])
+            for item in observation.get("ues", {}).values()
+            if item.get("gnb_cu_ue_f1ap_id") is not None
+        })
+        if ids:
+            return ids
+        if attempt + 1 < attempts:
+            time.sleep(1.0)
+    return []
+
+
 def append_event(state: dict[str, Any], event_type: str, message: str) -> None:
     state.setdefault("events", []).append(
         {"timestamp": time.time(), "type": event_type, "message": message}
@@ -97,14 +153,15 @@ def policy_string(policies: list[dict[str, int]]) -> str:
 def apply_rc_baseline(
     bridge: Path,
     *,
-    ue_count: int,
+    ue_ids: list[int],
     timeout_seconds: float,
     sst: int,
     sd: int,
 ) -> dict[str, Any]:
+    ue_count = len(ue_ids)
     policies = [
-        {"ue_id": index, "minimum": 0, "maximum": 100, "dedicated": 0}
-        for index in range(ue_count)
+        {"ue_id": ue_id, "minimum": 0, "maximum": 100, "dedicated": 0}
+        for ue_id in ue_ids
     ]
     environment = {
         **os.environ,
@@ -252,9 +309,21 @@ def main() -> int:
         )
         if arguments.mode == "closed_loop":
             if bridge.is_file() and os.access(bridge, os.X_OK):
+                # Address the UEs the gNB actually reports over E2 KPM.  F1AP
+                # IDs only equal 0..N-1 on a fresh gNB without re-attach.
+                rc_ue_ids = observed_f1ap_ids(arguments.manager_url, arguments.run_id)
+                state["rc_ue_id_source"] = "e2_kpm" if rc_ue_ids else "assumed_0_to_n"
+                if not rc_ue_ids:
+                    rc_ue_ids = list(range(ue_count))
+                    append_event(
+                        state,
+                        "rc_warning",
+                        "E2 KPM 未回報 UE，RC 基線改用假設的 F1AP ID 0..N-1",
+                    )
+                state["rc_ue_ids"] = rc_ue_ids
                 rc = apply_rc_baseline(
                     bridge,
-                    ue_count=ue_count,
+                    ue_ids=rc_ue_ids,
                     timeout_seconds=float(config.get("rc_timeout_seconds", 30.0)),
                     sst=int(config.get("sst", 1)),
                     sd=parse_sd(config.get("sd", "ffffff")),
@@ -266,7 +335,8 @@ def main() -> int:
                     state,
                     "rc_ready" if rc["success"] else "rc_warning",
                     (
-                        f"{ue_count} UE E2SM-RC baseline ACK（{rc['duration_ms']:.0f} ms）"
+                        f"{len(rc_ue_ids)} UE E2SM-RC baseline ACK（{rc['duration_ms']:.0f} ms，"
+                        f"F1AP IDs {rc_ue_ids}）"
                         if rc["success"]
                         else f"RC baseline 未完整 ACK；RF pacing 仍可運作：{rc['error']}"
                     ),
@@ -465,6 +535,7 @@ def main() -> int:
                 state["current_features"] = stable_features
                 state["latest_features"] = features
                 state["ues"] = ue_metrics
+                state["kpm"] = kpm_observation(arguments.manager_url, arguments.run_id)
                 state["total_video_offered_bps"] = (
                     features["video_offered_mbps"] * 1_000_000
                 )

@@ -5,7 +5,7 @@ import {
   SlidersHorizontal, Wifi, X, Zap,
 } from 'lucide-react'
 import { api } from './api'
-import type { Check as CheckType, Experiment, Platform, Run, RunTrafficUE, TrafficDefaults, TrafficFlow, TrafficJob, TrafficType, UE, VoiceGuardStatus } from './types'
+import type { Check as CheckType, Experiment, KpmSnapshot, Platform, Run, RunTrafficUE, TrafficDefaults, TrafficFlow, TrafficJob, TrafficType, UE, VoiceGuardStatus } from './types'
 
 type Page = 'overview' | 'experiments' | 'live'
 type VoiceHistory = {
@@ -675,6 +675,14 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
     } catch { /* Prometheus may be between scrapes */ }
   }, [activeRun?.id, configuredUEs])
   useEffect(() => { void refreshMetrics(); const timer = window.setInterval(() => void refreshMetrics(), 2000); return () => window.clearInterval(timer) }, [refreshMetrics])
+  const [kpm, setKpm] = useState<KpmSnapshot | null>(null)
+  const [kpmError, setKpmError] = useState('')
+  const refreshKpm = useCallback(async () => {
+    if (!activeRun) { setKpm(null); setKpmError(''); return }
+    try { setKpm(await api.kpm(activeRun.id)); setKpmError('') }
+    catch (reason) { setKpmError(reason instanceof Error ? reason.message : String(reason)) }
+  }, [activeRun?.id])
+  useEffect(() => { void refreshKpm(); const timer = window.setInterval(() => void refreshKpm(), 2000); return () => window.clearInterval(timer) }, [refreshKpm])
   async function startTraffic(target: string) {
     if (!activeRun) return
     const ues = target === 'all'
@@ -726,8 +734,42 @@ function Live({ platform, activeRun, latestRun, busy, onStop, onViewConfig }: { 
       <TrafficTable jobs={jobs} />
     </section>
     <section className="panel chart-panel"><div className="panel-head"><div><h3>Offered Load vs Delivered Throughput</h3><p>虛線是流量產生器需求量；實線是 Prometheus 實際 RX + TX，兩者分開才能看出資源競爭</p></div><div className="config-shortcuts">{configuredUEs.map(item => item.ue).map(ue => <button key={ue} onClick={() => onViewConfig(run, ue)}><FileText />{ue.toUpperCase()} Config</button>)}<a href={`${window.location.protocol}//${window.location.hostname}:3001`} target="_blank">Grafana <ChevronRight size={14} /></a></div></div><ThroughputChart ues={configuredUEs.map(item => item.ue)} history={throughputHistory} offeredHistory={offeredHistory} metrics={radioMetrics} /></section>
+    <KpmPanel snapshot={kpm} error={kpmError} activeRun={!!activeRun} />
     <section className="panel voice-quality-panel"><div className="panel-head"><div><h3>{voiceUENames.map(ue => ue.toUpperCase()).join(' / ')} Voice Quality</h3><p>取目前通話 UE 的最差值 · RTP-like 最近 3 秒 rolling</p></div><span className={`xapp-state ${voiceGuard?.state?.toLowerCase() ?? 'off'}`}>{voiceGuard?.state ?? 'XAPP OFF'}</span></div><VoiceQualityChart history={voiceHistory} voiceGuard={voiceGuard} ueCount={configuredUEs.length || 3} /></section>
   </div>
+}
+
+function kpmNumber(value: number | null | undefined, digits = 0) {
+  return value == null ? '—' : value.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits })
+}
+
+function KpmPanel({ snapshot, error, activeRun }: { snapshot: KpmSnapshot | null; error: string; activeRun: boolean }) {
+  const ues = snapshot?.ues ?? []
+  const cell = snapshot?.cell
+  const accepted = snapshot?.subscriptions.filter(item => item.success).map(item => `Style ${item.report_style}`) ?? []
+  return <section className="panel kpm-panel">
+    <div className="panel-head"><div><h3>E2SM-KPM · gNB 經 E2 上報</h3><p>OCUDU DU → E2 Indication → FlexRIC Near-RT RIC → oranlab_kpm xApp；UE 以 gNB-CU-UE-F1AP-ID 識別（依接入順序對應 UE）</p></div>
+      <span className={`xapp-state ${snapshot?.collector.running ? 'observing' : 'off'}`}>{snapshot?.collector.running ? `SUBSCRIBED · ${accepted.join(' + ') || '—'}` : activeRun ? 'KPM OFFLINE' : 'NO RUN'}</span></div>
+    {error && activeRun && <div className="traffic-error">{error}</div>}
+    <div className="kpm-cell">
+      <div><span>Cell DL Thp</span><b>{kpmNumber(cell?.values.thp_dl_kbps)} <small>kbps</small></b></div>
+      <div><span>Cell UL Thp</span><b>{kpmNumber(cell?.values.thp_ul_kbps)} <small>kbps</small></b></div>
+      <div><span>DL PRB Util</span><b>{kpmNumber(cell?.values.prb_util_dl_percent)} <small>%</small></b></div>
+      <div><span>UL PRB Util</span><b>{kpmNumber(cell?.values.prb_util_ul_percent)} <small>%</small></b></div>
+      <div><span>UE Reports</span><b>{ues.filter(item => !item.stale).length}</b></div>
+    </div>
+    <div className="kpm-table">
+      <div className="kpm-row kpm-head"><span>UE</span><span>F1AP ID</span><span>DL Thp kbps</span><span>UL Thp kbps</span><span>DL PRB</span><span>UL PRB</span><span>RLC DL delay ms</span><span>RLC UL delay ms</span><span>DL drop %</span><span>Age</span></div>
+      {ues.length === 0 && <div className="traffic-empty">{activeRun ? '等待 gNB 的 UE 級 KPM Indication…' : '實驗未運行'}</div>}
+      {ues.map(item => <div className={`kpm-row ${item.stale ? 'stale' : ''}`} key={`${item.gnb_cu_ue_f1ap_id}-${item.ue}`}>
+        <b>{item.ue.toUpperCase()}</b><span>{item.gnb_cu_ue_f1ap_id ?? '—'}</span>
+        <span>{kpmNumber(item.values.thp_dl_kbps)}</span><span>{kpmNumber(item.values.thp_ul_kbps)}</span>
+        <span>{kpmNumber(item.values.prb_used_dl)}</span><span>{kpmNumber(item.values.prb_used_ul)}</span>
+        <span>{kpmNumber(item.values.rlc_sdu_delay_dl_ms, 2)}</span><span>{kpmNumber(item.values.rlc_delay_ul_ms, 2)}</span>
+        <span>{kpmNumber(item.values.rlc_drop_rate_dl_percent)}</span><span>{item.age_seconds == null ? '—' : `${item.age_seconds.toFixed(1)}s`}</span>
+      </div>)}
+    </div>
+  </section>
 }
 
 function VoiceGuardPanel({ status, activeRun, rfScenario, busy, mode, algorithm, policy, onMode, onAlgorithm, onToggle }: {

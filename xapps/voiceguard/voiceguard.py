@@ -58,6 +58,28 @@ def metric_values(manager_url: str, run_id: str, metric: str) -> dict[str, float
     return result
 
 
+def kpm_observation(manager_url: str, run_id: str) -> dict[str, Any]:
+    """Latest per-UE E2SM-KPM view received over E2 (observation only)."""
+    try:
+        payload = get_json(f"{manager_url}/api/runs/{run_id}/kpm")
+    except (HTTPError, URLError, TimeoutError, ValueError) as error:
+        return {"available": False, "error": str(error)}
+    keys = ("thp_dl_kbps", "thp_ul_kbps", "prb_used_dl", "prb_used_ul", "rlc_sdu_delay_dl_ms")
+    return {
+        "available": True,
+        "source": "e2sm-kpm",
+        "ue_mapping": payload.get("ue_mapping"),
+        "ues": {
+            (item.get("ue") if item.get("ue") != "unknown" else f"f1ap{item.get('gnb_cu_ue_f1ap_id')}"): {
+                "gnb_cu_ue_f1ap_id": item.get("gnb_cu_ue_f1ap_id"),
+                **{key: (item.get("values") or {}).get(key) for key in keys},
+            }
+            for item in payload.get("ues", [])
+            if not item.get("stale")
+        },
+    }
+
+
 def write_state(path: Path, state: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(
@@ -542,6 +564,7 @@ def main() -> int:
                     for ue in ("ue1", "ue2", "ue3")
                 }
                 state["voice_active"] = voice_active
+                state["kpm"] = kpm_observation(arguments.manager_url, arguments.run_id)
                 state["total_video_offered_bps"] = total_offered
                 state["total_video_delivered_bps"] = total_delivered
                 state["consecutive_bad_samples"] = bad_samples

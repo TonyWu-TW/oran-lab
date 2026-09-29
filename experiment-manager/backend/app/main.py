@@ -126,6 +126,11 @@ async def lifespan(_: FastAPI):
     RUN_ROOT.mkdir(parents=True, exist_ok=True)
     VOICEGUARD_ROOT.mkdir(parents=True, exist_ok=True)
     seed_baseline()
+    with SessionLocal() as database:
+        # Start/stop worker threads of a previous Manager process are gone, so
+        # STARTING/STOPPING rows can never finish; RUNNING rows are kept only
+        # while the radio stack really runs (e.g. a Manager-only restart).
+        reconcile_lost_runs(database, include_transitional=True)
     # Worker threads and their subprocess handles live in this Manager process.
     # Any active DB rows found during a fresh startup therefore belong to a
     # previous Manager instance and must not remain falsely RUNNING forever.
@@ -169,14 +174,27 @@ app.add_middleware(
 )
 
 PROMETHEUS = "http://127.0.0.1:9095"
+KPM_EXPORTER = "http://127.0.0.1:9106"
 RUN_ROOT = LAB_ROOT / "experiments" / "runs"
-ALLOWED_METRICS = {
-    "ue_rx_bps": "oran_ue_rx_bps",
-    "ue_tx_bps": "oran_ue_tx_bps",
-    "ue_ping_latency": "oran_ue_ping_latency_ms",
-    "ue_ping_loss": "oran_ue_ping_loss_percent",
-    "ue_attached": "oran_ue_attached",
-    "ue_pdu_up": "oran_ue_pdu_session_up",
+# Allow-listed metric name -> (Prometheus metric, fixed label matchers).
+ALLOWED_METRICS: dict[str, tuple[str, dict[str, str]]] = {
+    "ue_rx_bps": ("oran_ue_rx_bps", {}),
+    "ue_tx_bps": ("oran_ue_tx_bps", {}),
+    "ue_ping_latency": ("oran_ue_ping_latency_ms", {}),
+    "ue_ping_loss": ("oran_ue_ping_loss_percent", {}),
+    "ue_attached": ("oran_ue_attached", {}),
+    "ue_pdu_up": ("oran_ue_pdu_session_up", {}),
+    # E2SM-KPM measurements (raw E2 node units, see the "unit" label).
+    "kpm_ue_thp_dl": ("oran_kpm_value", {"scope": "ue", "measurement": "DRB.UEThpDl"}),
+    "kpm_ue_thp_ul": ("oran_kpm_value", {"scope": "ue", "measurement": "DRB.UEThpUl"}),
+    "kpm_ue_prb_used_dl": ("oran_kpm_value", {"scope": "ue", "measurement": "RRU.PrbUsedDl"}),
+    "kpm_ue_prb_used_ul": ("oran_kpm_value", {"scope": "ue", "measurement": "RRU.PrbUsedUl"}),
+    "kpm_ue_rlc_delay_dl": ("oran_kpm_value", {"scope": "ue", "measurement": "DRB.RlcSduDelayDl"}),
+    "kpm_ue_rlc_delay_ul": ("oran_kpm_value", {"scope": "ue", "measurement": "DRB.RlcDelayUl"}),
+    "kpm_cell_prb_util_dl": ("oran_kpm_value", {"scope": "cell", "measurement": "RRU.PrbTotDl"}),
+    "kpm_cell_prb_util_ul": ("oran_kpm_value", {"scope": "cell", "measurement": "RRU.PrbTotUl"}),
+    "kpm_cell_thp_dl": ("oran_kpm_value", {"scope": "cell", "measurement": "DRB.UEThpDl"}),
+    "kpm_cell_thp_ul": ("oran_kpm_value", {"scope": "cell", "measurement": "DRB.UEThpUl"}),
 }
 TRAFFIC_HELPER = LAB_ROOT / "scripts" / "oranlab-traffic.py"
 VOICEGUARD_SCRIPT = LAB_ROOT / "xapps" / "voiceguard" / "voiceguard.py"
@@ -403,6 +421,42 @@ def migrate_database() -> None:
             "UPDATE traffic_jobs SET transport = 'icmp', traffic_type = 'ping', application_protocol = 'ping' "
             "WHERE batch_id IS NULL AND protocol = 'ping'"
         )
+
+
+def reconcile_lost_runs(database: Session, include_transitional: bool = False) -> None:
+    """Mark runs whose radio stack no longer exists (reboot, crash) as LOST.
+
+    Without this a RUNNING row survives a server reboot forever and blocks
+    every new experiment with 409.
+    """
+    states = ["RUNNING", "DEGRADED", *(["STARTING", "STOPPING"] if include_transitional else [])]
+    candidates = database.scalars(select(models.ExperimentRun).where(
+        models.ExperimentRun.state.in_(states)
+    )).all()
+    if not candidates:
+        return
+    try:
+        status = invoke("status")
+    except (ControlError, OSError, subprocess.SubprocessError, ValueError):
+        return
+    if any(item.get("running") for item in status.get("components", {}).values()):
+        return
+    for run in candidates:
+        previous = run.state
+        run.state = "LOST"
+        run.stopped_at = datetime.now(timezone.utc)
+        add_event(
+            database, run.id, "platform_lost",
+            f"Radio stack 已不存在（原狀態 {previous}），可能是伺服器重開或程序異常結束",
+            severity="warning", previous_state=previous,
+        )
+    for job in database.scalars(select(models.TrafficJob).where(
+        models.TrafficJob.run_id.in_([run.id for run in candidates]),
+        models.TrafficJob.status.in_(["QUEUED", "RUNNING", "STOP_REQUESTED"]),
+    )).all():
+        job.status = "INTERRUPTED"
+        job.finished_at = datetime.now(timezone.utc)
+    database.commit()
 
 
 def experiment_or_404(database: Session, experiment_id: str) -> models.Experiment:
@@ -708,8 +762,10 @@ def run_start_worker(run_id: str) -> None:
             run.state = "RUNNING"
             run.started_at = datetime.now(timezone.utc)
             run.result_summary = {"platform": status_payload}
-            ue_count = len(status_payload.get("components", {})) - 3
-            add_event(database, run_id, "started", f"RIC、gNB、Broker 與 {ue_count} 台 UE 已就緒")
+            components = status_payload.get("components", {})
+            ue_count = sum(1 for name in components if re.fullmatch(r"ue[0-9]+", name))
+            kpm_note = "，E2 KPM collector 已啟動" if components.get("kpm", {}).get("running") else ""
+            add_event(database, run_id, "started", f"RIC、gNB、Broker 與 {ue_count} 台 UE 已就緒{kpm_note}")
         except Exception as exc:
             run.state = "START_FAILED"
             add_event(database, run_id, "start_failed", str(exc), severity="error")
@@ -722,6 +778,7 @@ def start_run(experiment_id: str, database: Session = Depends(get_db)):
     validation = validate_experiment(experiment)
     if not validation["ok"]:
         raise HTTPException(422, validation)
+    reconcile_lost_runs(database)
     active = database.scalar(select(models.ExperimentRun).where(
         models.ExperimentRun.state.in_(["STARTING", "RUNNING", "STOPPING"])
     ))
@@ -1118,7 +1175,10 @@ def is_voiceguard_pid(pid: int, run_id: str) -> bool:
     except OSError:
         return False
     return (
-        any(str(script) in command for script in (VOICEGUARD_SCRIPT, VOICEGUARD_RF_SCRIPT))
+        any(
+            str(script) in command
+            for script in (VOICEGUARD_SCRIPT, VOICEGUARD_RF_SCRIPT, VOICEGUARD_RF_3UE_SCRIPT)
+        )
         and run_id in command
     )
 
@@ -1187,6 +1247,14 @@ def start_voiceguard(
         script = VOICEGUARD_RF_3UE_SCRIPT if is_3ue_scenario else VOICEGUARD_RF_SCRIPT
         default_model = VOICEGUARD_RF_3UE_MODEL if is_3ue_scenario else VOICEGUARD_RF_MODEL
     else:
+        # Rule V1 hard-codes UE1/UE2 video and UE3 voice; running it on any
+        # other topology would watch the wrong UEs and pace the wrong flows.
+        if not is_3ue_scenario:
+            raise HTTPException(
+                422,
+                "Rule VoiceGuard only supports the 3 UE topology (UE1/UE2 video, UE3 voice); "
+                "use algorithm=random_forest for this run",
+            )
         script = VOICEGUARD_SCRIPT
         default_model = None
     if not script.exists():
@@ -1306,14 +1374,37 @@ def run_ue_config(run_id: str, ue: str, database: Session = Depends(get_db)):
     return {"run_id": run_id, "ue": ue, "path": str(config_path), "redacted": True, "content": redacted}
 
 
+def metric_selector(metric: str, run_id: str) -> str:
+    selected = ALLOWED_METRICS.get(metric)
+    if not selected:
+        raise HTTPException(400, "metric is not allow-listed")
+    metric_name, matchers = selected
+    labels = ",".join(f'{key}="{value}"' for key, value in {"run_id": run_id, **matchers}.items())
+    return f"{metric_name}{{{labels}}}"
+
+
+@app.get("/api/runs/{run_id}/kpm")
+def run_kpm(run_id: str, database: Session = Depends(get_db)):
+    """Latest E2SM-KPM cell and per-UE measurements received over E2 for this run."""
+    if not database.get(models.ExperimentRun, run_id):
+        raise HTTPException(404, "run not found")
+    try:
+        with httpx.Client(trust_env=False, timeout=3) as client:
+            response = client.get(f"{KPM_EXPORTER}/kpm.json")
+        response.raise_for_status()
+        payload = response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(503, f"E2 KPM exporter unavailable: {exc}") from exc
+    if payload.get("run_id") != run_id:
+        raise HTTPException(409, f"E2 KPM exporter is serving run {payload.get('run_id')}")
+    return payload
+
+
 @app.get("/api/runs/{run_id}/metrics/query")
 def metrics_query(run_id: str, metric: str = Query(pattern="^[a-z_]+$"), database: Session = Depends(get_db)):
     if not database.get(models.ExperimentRun, run_id):
         raise HTTPException(404, "run not found")
-    metric_name = ALLOWED_METRICS.get(metric)
-    if not metric_name:
-        raise HTTPException(400, "metric is not allow-listed")
-    query = f'{metric_name}{{run_id="{run_id}"}}'
+    query = metric_selector(metric, run_id)
     try:
         with httpx.Client(trust_env=False, timeout=3) as client:
             response = client.get(f"{PROMETHEUS}/api/v1/query", params={"query": query})
@@ -1334,12 +1425,9 @@ def metrics_range(
 ):
     if not database.get(models.ExperimentRun, run_id):
         raise HTTPException(404, "run not found")
-    metric_name = ALLOWED_METRICS.get(metric)
-    if not metric_name:
-        raise HTTPException(400, "metric is not allow-listed")
+    query = metric_selector(metric, run_id)
     if end <= start or end - start > 86400:
         raise HTTPException(400, "range must be positive and no longer than 24 hours")
-    query = f'{metric_name}{{run_id="{run_id}"}}'
     try:
         with httpx.Client(trust_env=False, timeout=5) as client:
             response = client.get(f"{PROMETHEUS}/api/v1/query_range", params={

@@ -1,4 +1,4 @@
-import type { Check, Experiment, Platform, Run, RunTrafficUE, TrafficJob, UE, VoiceGuardStatus } from './types'
+import type { Check, Experiment, KpmSnapshot, Platform, Run, RunTrafficUE, TrafficJob, UE, VoiceGuardStatus } from './types'
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -42,6 +42,7 @@ export const api = {
     body: JSON.stringify({ mode, config }),
   }),
   stopVoiceGuard: (runId: string) => request<VoiceGuardStatus>(`/api/runs/${runId}/xapps/voiceguard/stop`, { method: 'POST' }),
+  kpm: (runId: string) => request<KpmSnapshot>(`/api/runs/${runId}/kpm`),
   metric: (runId: string, metric: string) => request<{ data: { result: Array<{ metric: { ue?: string }; value: [number, string] }> } }>(`/api/runs/${runId}/metrics/query?metric=${encodeURIComponent(metric)}`),
   ueConfig: (experimentId: string, ueId: string) => request<{ experiment_id: string; ue_id: string; ue: string; path: string; custom: boolean; redacted: boolean; content: string; applies: string }>(`/api/experiments/${experimentId}/ues/${ueId}/config`),
   saveUEConfig: (experimentId: string, ueId: string, content: string) => request<{ experiment_id: string; ue_id: string; ue: string; path: string; custom: boolean; redacted: boolean; content: string; applies: string; revision: number }>(`/api/experiments/${experimentId}/ues/${ueId}/config`, { method: 'PUT', body: JSON.stringify({ content }) }),
